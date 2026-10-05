@@ -418,3 +418,77 @@ pre,
   box-shadow: 1px 1px 0px rgba(0,0,0,0.5);
 }
 
+/* 10. Prompt 8: Workshop Service Report & Print Optimization */
+.report-sheet {
+  background-color: #FFFFFF;
+  color: var(--color-ink);
+  border: var(--border-ink-thick);
+  box-shadow: var(--shadow-hard-xl);
+  padding: 40px;
+  position: relative;
+  max-width: 1040px;
+  margin: 0 auto;
+}
+
+.report-metric-tile {
+  background-color: var(--color-paper-light);
+  border: var(--border-ink);
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.timeline-ledger-item {
+  display: flex;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px dashed var(--color-ink-subtle);
+  align-items: flex-start;
+}
+
+.signature-line {
+  border-bottom: 1px solid var(--color-ink);
+  height: 24px;
+  margin-top: 8px;
+}
+
+@media print {
+  /* Hide non-printable navigation, header actions, and browser buttons */
+  nav,
+  footer,
+  .no-print,
+  button,
+  .btn {
+    display: none !important;
+  }
+
+  body {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  body::before {
+    display: none !important;
+  }
+
+  .report-sheet {
+    border: 2px solid #000000 !important;
+    box-shadow: none !important;
+    padding: 24px !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    page-break-after: avoid;
+  }
+
+  .timeline-ledger-item,
+  .report-metric-tile,
+  .report-plate-item {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+}
+
+

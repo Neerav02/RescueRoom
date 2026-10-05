@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage';
 import OperatorPage from './pages/OperatorPage';
 import TriageBoardPage from './pages/TriageBoardPage';
 import RoomPage from './pages/RoomPage';
+import ServiceReportPage from './pages/ServiceReportPage';
 import { initCometChat } from './lib/cometchat';
 
 function AppContent() {
@@ -92,6 +93,16 @@ function AppContent() {
             element={
               currentUser ? (
                 <RoomPage currentUser={currentUser} />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          <Route
+            path="/report/:guid"
+            element={
+              currentUser ? (
+                <ServiceReportPage currentUser={currentUser} />
               ) : (
                 <Navigate to="/login" replace />
               )
