@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CometChat } from '../lib/cometchat';
+import { CometChat, ensureUserLoggedIn } from '../lib/cometchat';
 import { seedDemoIncidents } from '../lib/seed';
 
 export default function TriageBoardPage({ currentUser }) {
@@ -21,6 +21,7 @@ export default function TriageBoardPage({ currentUser }) {
   const loadIncidents = async () => {
     if (!currentUser) return;
     try {
+      await ensureUserLoggedIn(currentUser);
       // 1. Fetch group list
       const request = new CometChat.GroupsRequestBuilder()
         .setLimit(50)

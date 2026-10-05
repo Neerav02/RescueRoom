@@ -6,7 +6,7 @@ import OperatorPage from './pages/OperatorPage';
 import TriageBoardPage from './pages/TriageBoardPage';
 import RoomPage from './pages/RoomPage';
 import ServiceReportPage from './pages/ServiceReportPage';
-import { initCometChat } from './lib/cometchat';
+import { initCometChat, ensureUserLoggedIn } from './lib/cometchat';
 
 function AppContent() {
   const navigate = useNavigate();
@@ -19,12 +19,18 @@ function AppContent() {
     }
   });
 
-  // Ensure CometChat SDK is initialized on startup
+  // Ensure CometChat SDK is initialized and session restored on startup
   useEffect(() => {
-    initCometChat().catch((err) => {
+    async function syncAuth() {
+      await initCometChat();
+      if (currentUser) {
+        await ensureUserLoggedIn(currentUser);
+      }
+    }
+    syncAuth().catch((err) => {
       console.warn('Initial CometChat init notice:', err);
     });
-  }, []);
+  }, [currentUser]);
 
   const handleLoginSuccess = (user) => {
     setCurrentUser(user);

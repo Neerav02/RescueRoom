@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { CometChat } from '../lib/cometchat';
+import { CometChat, ensureUserLoggedIn } from '../lib/cometchat';
 
 export default function ServiceReportPage({ currentUser }) {
   const { guid } = useParams();
@@ -17,6 +17,7 @@ export default function ServiceReportPage({ currentUser }) {
       if (!guid) return;
       try {
         console.log(`[RescueRoom] Fetching data for service report ${guid}...`);
+        await ensureUserLoggedIn(currentUser);
         const grp = await CometChat.getGroup(guid);
         setGroup(grp);
 
@@ -33,7 +34,7 @@ export default function ServiceReportPage({ currentUser }) {
       }
     }
     fetchReportData();
-  }, [guid]);
+  }, [guid, currentUser]);
 
   // Parse group metadata
   let metadata = {};

@@ -1,6 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { CometChat, DEMO_USERS } from '../lib/cometchat';
+import {
+  CometChat,
+  DEMO_USERS,
+  ensureUserLoggedIn,
+  ensureGroupJoined,
+  safeSendMessage,
+  safeSendMediaMessage,
+} from '../lib/cometchat';
 
 export default function RoomPage({ currentUser }) {
   const { guid } = useParams();
@@ -29,6 +36,13 @@ export default function RoomPage({ currentUser }) {
       if (!guid) return;
       try {
         console.log(`[RescueRoom] Fetching incident channel ${guid}...`);
+        
+        // 1. Ensure user has an active CometChat session
+        await ensureUserLoggedIn(currentUser);
+
+        // 2. Ensure current user is joined to this incident channel
+        await ensureGroupJoined(guid);
+
         const grp = await CometChat.getGroup(guid);
         setGroup(grp);
 
@@ -55,7 +69,7 @@ export default function RoomPage({ currentUser }) {
       }
     }
     loadRoom();
-  }, [guid]);
+  }, [guid, currentUser]);
 
   // Real-time message & typing listener (Prompt 4)
   useEffect(() => {
@@ -166,15 +180,19 @@ export default function RoomPage({ currentUser }) {
 
     try {
       // Clear typing indicator immediately
-      const indicator = new CometChat.TypingIndicator(guid, CometChat.RECEIVER_TYPE.GROUP);
-      CometChat.endTyping(indicator);
+      try {
+        const indicator = new CometChat.TypingIndicator(guid, CometChat.RECEIVER_TYPE.GROUP);
+        CometChat.endTyping(indicator);
+      } catch (e) {
+        // non-blocking
+      }
 
       const textMessage = new CometChat.TextMessage(
         guid,
         textToSend,
         CometChat.RECEIVER_TYPE.GROUP
       );
-      const sent = await CometChat.sendMessage(textMessage);
+      const sent = await safeSendMessage(textMessage, currentUser);
       setMessages((prev) => [...prev, sent]);
     } catch (err) {
       console.error('Failed to send text message:', err);
@@ -218,7 +236,7 @@ export default function RoomPage({ currentUser }) {
       };
       mediaMessage.setMetadata(plateMeta);
 
-      const sent = await CometChat.sendMediaMessage(mediaMessage);
+      const sent = await safeSendMediaMessage(mediaMessage, currentUser);
       setMessages((prev) => [...prev, sent]);
       console.log(`[RescueRoom] Evidence plate transmitted successfully.`);
     } catch (err) {
@@ -268,7 +286,7 @@ export default function RoomPage({ currentUser }) {
           CometChat.RECEIVER_TYPE.GROUP
         );
         try {
-          const sent = await CometChat.sendMessage(sysMsg);
+          const sent = await safeSendMessage(sysMsg, currentUser);
           setMessages((prev) => [...prev, sent]);
         } catch (e) {
           console.warn(e);
@@ -282,6 +300,10 @@ export default function RoomPage({ currentUser }) {
     try {
       console.log(`[RescueRoom] Escalating to ${rung} call on channel ${guid}...`);
       setActiveRung(rung);
+
+      // Ensure active CometChat authentication & group membership
+      await ensureUserLoggedIn(currentUser);
+      await ensureGroupJoined(guid);
 
       // Attempt live WebRTC camera/microphone access
       try {
@@ -313,7 +335,7 @@ export default function RoomPage({ currentUser }) {
         `🚨 ESCALATION LADDER CLIMBED TO [${rung} CALL]\nSTATION: ${currentUser?.name.toUpperCase()} (${currentUser?.callsign})\nCHANNEL: ALL ROSTER UNITS STAND BY`,
         CometChat.RECEIVER_TYPE.GROUP
       );
-      const sent = await CometChat.sendMessage(logCallStart);
+      const sent = await safeSendMessage(logCallStart, currentUser);
       setMessages((prev) => [...prev, sent]);
     } catch (err) {
       console.error('[RescueRoom] Escalation error:', err);
@@ -362,6 +384,10 @@ export default function RoomPage({ currentUser }) {
     setIsResolved(true);
 
     try {
+      // Ensure user is authenticated and joined
+      await ensureUserLoggedIn(currentUser);
+      await ensureGroupJoined(guid);
+
       const updatedMeta = {
         ...metadata,
         status: 'resolved',
@@ -396,7 +422,7 @@ export default function RoomPage({ currentUser }) {
         `✅ [INCIDENT OFFICIALLY RESOLVED]\nRESOLVED BY: ${currentUser?.name?.toUpperCase()} (${currentUser?.callsign})\nSTATUS: WORK ORDER COMPLETED · ALL ROSTER UNITS STAND DOWN\nTIMESTAMP: [${timeStr} UTC]\nINCIDENT ARCHIVE REF: ${guid}`,
         CometChat.RECEIVER_TYPE.GROUP
       );
-      const sent = await CometChat.sendMessage(resolveMsg);
+      const sent = await safeSendMessage(resolveMsg, currentUser);
       setMessages((prev) => [...prev, sent]);
     } catch (err) {
       console.warn('[RescueRoom] Error updating group metadata to resolved:', err);

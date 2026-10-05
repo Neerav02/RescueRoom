@@ -66,6 +66,90 @@ export async function getLoggedInUser() {
 }
 
 /**
+ * Ensure the specified user is actively authenticated with CometChat
+ */
+export async function ensureUserLoggedIn(user = null) {
+  let targetUser = user;
+  if (!targetUser) {
+    try {
+      const stored = sessionStorage.getItem('rescueroom_user');
+      if (stored) {
+        targetUser = JSON.parse(stored);
+      }
+    } catch {
+      // ignore
+    }
+  }
+  if (!targetUser) return null;
+  await initCometChat();
+  try {
+    const loggedIn = await CometChat.getLoggedInUser();
+    if (loggedIn && loggedIn.getUid() === targetUser.uid) {
+      return loggedIn;
+    }
+  } catch (e) {
+    console.warn("[RescueRoom] getLoggedInUser check notice:", e);
+  }
+  return loginOrProvisionUser(targetUser);
+}
+
+/**
+ * Ensure user joins a group channel safely. If already joined, handles gracefully.
+ */
+export async function ensureGroupJoined(guid, groupType = CometChat.GROUP_TYPE.PUBLIC) {
+  if (!guid) return;
+  await initCometChat();
+  try {
+    await CometChat.joinGroup(guid, groupType, "");
+    console.log(`[RescueRoom] Active user joined channel ${guid}`);
+  } catch (err) {
+    if (err?.code !== 'ERR_ALREADY_JOINED') {
+      console.warn('[RescueRoom] joinGroup notice:', err?.message || err);
+    }
+  }
+}
+
+/**
+ * Send text message safely with automatic group-membership self-healing and re-auth
+ */
+export async function safeSendMessage(textMessage, currentUser = null) {
+  try {
+    return await CometChat.sendMessage(textMessage);
+  } catch (err) {
+    if (err?.code === 'ERR_NOT_A_MEMBER' || err?.code === 'USER_NOT_LOGED_IN') {
+      console.warn(`[RescueRoom] Resolving send error (${err.code}), joining group & re-authenticating...`);
+      if (currentUser) {
+        await ensureUserLoggedIn(currentUser);
+      }
+      const guid = textMessage.getReceiverId();
+      await ensureGroupJoined(guid);
+      return await CometChat.sendMessage(textMessage);
+    }
+    throw err;
+  }
+}
+
+/**
+ * Send media message safely with automatic group-membership self-healing and re-auth
+ */
+export async function safeSendMediaMessage(mediaMessage, currentUser = null) {
+  try {
+    return await CometChat.sendMediaMessage(mediaMessage);
+  } catch (err) {
+    if (err?.code === 'ERR_NOT_A_MEMBER' || err?.code === 'USER_NOT_LOGED_IN') {
+      console.warn(`[RescueRoom] Resolving media send error (${err.code}), joining group & re-authenticating...`);
+      if (currentUser) {
+        await ensureUserLoggedIn(currentUser);
+      }
+      const guid = mediaMessage.getReceiverId();
+      await ensureGroupJoined(guid);
+      return await CometChat.sendMediaMessage(mediaMessage);
+    }
+    throw err;
+  }
+}
+
+/**
  * Demo Users for Multi-Tenant Isolation
  * Company 1: Northwind Heavy Equipment (Asha, Ravi, Meera)
  * Company 2: Kestrel Logistics (Dev, Sana, Imran)

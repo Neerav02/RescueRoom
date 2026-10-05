@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CometChat, DEMO_USERS } from '../lib/cometchat';
+import { CometChat, DEMO_USERS, ensureUserLoggedIn, safeSendMessage } from '../lib/cometchat';
 
 export default function OperatorPage({ currentUser }) {
   const navigate = useNavigate();
@@ -42,6 +42,7 @@ export default function OperatorPage({ currentUser }) {
     async function fetchCompanyIncidents() {
       if (!currentUser) return;
       try {
+        await ensureUserLoggedIn(currentUser);
         const request = new CometChat.GroupsRequestBuilder()
           .setLimit(20)
           .build();
@@ -70,6 +71,7 @@ export default function OperatorPage({ currentUser }) {
     setSubmitError(null);
 
     try {
+      await ensureUserLoggedIn(currentUser);
       const incidentNum = String(Math.floor(1000 + Math.random() * 9000));
       const rawGuid = `${currentUser.companyId}_inc_${incidentNum}`;
       const groupName = `INC-${incidentNum} · ${equipment}`;
@@ -130,7 +132,7 @@ export default function OperatorPage({ currentUser }) {
         initialText,
         CometChat.RECEIVER_TYPE.GROUP
       );
-      await CometChat.sendMessage(firstMessage);
+      await safeSendMessage(firstMessage, currentUser);
       console.log(`[RescueRoom] Initial dispatch message broadcast.`);
 
       // Navigate to the Incident Room
