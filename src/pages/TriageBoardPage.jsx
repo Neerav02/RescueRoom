@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CometChat } from '../lib/cometchat';
+import { seedDemoIncidents } from '../lib/seed';
 
 export default function TriageBoardPage({ currentUser }) {
   const navigate = useNavigate();
@@ -243,6 +244,19 @@ export default function TriageBoardPage({ currentUser }) {
                 ⚠ SOMETHING'S WRONG
               </button>
             )}
+
+            <button
+              onClick={async () => {
+                setLoading(true);
+                await seedDemoIncidents(currentUser);
+                await loadIncidents();
+              }}
+              className="btn"
+              style={{ fontSize: '0.82rem', padding: '8px 16px', backgroundColor: 'var(--color-paper-light)' }}
+              title="Generate sample operational incidents in CometChat"
+            >
+              ⚡ SEED DEMO SCENARIOS
+            </button>
 
             <button
               onClick={loadIncidents}

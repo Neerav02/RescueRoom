@@ -121,6 +121,60 @@ export default function ServiceReportPage({ currentUser }) {
     return d.toISOString().substring(0, 10);
   };
 
+  // Prompt 9: Cross-Tenant Security Guard
+  const isUnauthorizedTenant = currentUser && guid && !guid.startsWith(`${currentUser.companyId}_inc_`);
+
+  if (isUnauthorizedTenant) {
+    return (
+      <div style={{ width: '100%', flex: 1, padding: '48px 32px' }}>
+        <div
+          className="paper-card"
+          style={{
+            maxWidth: '680px',
+            margin: '40px auto',
+            border: 'var(--border-ink-thick)',
+            borderLeft: '12px solid var(--color-vermilion)',
+            boxShadow: 'var(--shadow-hard-xl)',
+            padding: '32px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span className="stamp stamp-critical">SECURITY LOCKDOWN</span>
+            <span className="mono" style={{ fontSize: '0.78rem', color: 'var(--color-ink-muted)' }}>
+              PROTOCOL 403 // TENANT ISOLATION ENFORCED
+            </span>
+          </div>
+          <h2 style={{ fontSize: '1.8rem', margin: '14px 0 8px' }}>
+            UNAUTHORIZED SERVICE REPORT ARCHIVE
+          </h2>
+          <p
+            className="mono"
+            style={{
+              fontSize: '0.88rem',
+              color: 'var(--color-ink)',
+              lineHeight: 1.55,
+              backgroundColor: 'var(--color-paper-light)',
+              padding: '16px',
+              border: '1px solid var(--color-ink)',
+              margin: '16px 0 24px',
+            }}
+          >
+            Service Report for incident <strong>{guid}</strong> is provisioned for an external corporate workspace. Under RescueRoom's multi-tenant isolation policy, personnel from <strong>{currentUser?.companyName?.toUpperCase()}</strong> cannot inspect foreign maintenance ledgers.
+          </p>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button
+              onClick={() => navigate(currentUser?.role === 'operator' ? '/operator' : '/board')}
+              className="btn btn-hazard"
+              style={{ padding: '10px 20px', fontSize: '0.85rem' }}
+            >
+              ← RETURN TO AUTHORIZED {currentUser?.companyName?.toUpperCase()} STATION
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ width: '100%', flex: 1, padding: '24px 32px 64px' }}>
       <div style={{ maxWidth: '1080px', margin: '0 auto' }}>

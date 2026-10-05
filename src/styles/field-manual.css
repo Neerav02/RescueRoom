@@ -453,6 +453,29 @@ pre,
   margin-top: 8px;
 }
 
+/* 11. Prompt 9: Mobile & Responsive Layout Enhancements */
+.room-layout-grid {
+  grid-template-columns: 150px 1fr 300px;
+}
+
+@media (max-width: 1080px) {
+  .room-layout-grid {
+    grid-template-columns: 140px 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .room-layout-grid {
+    grid-template-columns: 1fr;
+  }
+  .report-sheet {
+    padding: 20px !important;
+  }
+  h1 {
+    font-size: 1.8rem !important;
+  }
+}
+
 @media print {
   /* Hide non-printable navigation, header actions, and browser buttons */
   nav,
