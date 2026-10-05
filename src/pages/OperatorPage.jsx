@@ -103,7 +103,7 @@ export default function OperatorPage({ currentUser }) {
           (u) => u.companyId === currentUser.companyId && u.uid !== currentUser.uid
         );
         const membersList = otherResponders.map(
-          (u) => new CometChat.GroupMember(u.uid, CometChat.GROUP_MEMBER_SCOPE.PARTICIPANT)
+          (u) => new CometChat.GroupMember(u.uid, CometChat.GROUP_MEMBER_SCOPE.ADMIN)
         );
         if (membersList.length > 0) {
           await CometChat.addMembersToGroup(rawGuid, membersList, []);

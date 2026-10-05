@@ -349,19 +349,57 @@ export default function RoomPage({ currentUser }) {
     }
   }, [localStream, activeRung]);
 
-  // Resolve incident
+  // Resolve incident with physical rubber stamp animation & CometChat metadata update (Prompt 7)
+  const [showStampAnimation, setShowStampAnimation] = useState(false);
+
   const handleResolveIncident = async () => {
+    // End active call if climbing
+    if (activeRung !== 'CHAT') {
+      await handleClimbLadder('CHAT');
+    }
+
+    setShowStampAnimation(true);
     setIsResolved(true);
+
     try {
+      const updatedMeta = {
+        ...metadata,
+        status: 'resolved',
+        resolvedAt: Date.now(),
+        resolvedBy: currentUser?.callsign || 'DISPATCH',
+        resolvedByName: currentUser?.name || 'Dispatcher',
+      };
+
+      // Store in localStorage for instant local sync
+      try {
+        localStorage.setItem(`rescueroom_resolved_${guid}`, JSON.stringify(updatedMeta));
+      } catch (storageErr) {
+        console.warn(storageErr);
+      }
+
+      // 1. Update CometChat Group Metadata so Triage Board reflects resolution cloud-wide
+      if (group) {
+        const updatedGroup = new CometChat.Group(
+          guid,
+          group.getName(),
+          CometChat.GROUP_TYPE.PUBLIC
+        );
+        updatedGroup.setMetadata(JSON.stringify(updatedMeta));
+        await CometChat.updateGroup(updatedGroup);
+        console.log('[RescueRoom] CometChat group metadata updated to resolved status.');
+      }
+
+      // 2. Broadcast official real-time resolution dispatch log to channel
+      const timeStr = new Date().toISOString().substring(11, 19);
       const resolveMsg = new CometChat.TextMessage(
         guid,
-        `✅ INCIDENT OFFICIALLY RESOLVED BY ${currentUser?.name.toUpperCase()} (${currentUser?.callsign})\nSTATUS: MARKED COMPLETED`,
+        `✅ [INCIDENT OFFICIALLY RESOLVED]\nRESOLVED BY: ${currentUser?.name?.toUpperCase()} (${currentUser?.callsign})\nSTATUS: WORK ORDER COMPLETED · ALL ROSTER UNITS STAND DOWN\nTIMESTAMP: [${timeStr} UTC]\nINCIDENT ARCHIVE REF: ${guid}`,
         CometChat.RECEIVER_TYPE.GROUP
       );
       const sent = await CometChat.sendMessage(resolveMsg);
       setMessages((prev) => [...prev, sent]);
-    } catch (e) {
-      console.warn(e);
+    } catch (err) {
+      console.warn('[RescueRoom] Error updating group metadata to resolved:', err);
     }
   };
 
@@ -438,29 +476,55 @@ export default function RoomPage({ currentUser }) {
           </div>
         )}
 
-        {/* Resolved Banner */}
+        {/* Resolved Banner with Stamped Rubber Seal Animation (Prompt 7) */}
         {isResolved && (
           <div
             className="paper-card"
             style={{
               backgroundColor: '#E8F5F3',
-              borderLeft: '8px solid var(--color-teal)',
-              marginBottom: '16px',
-              padding: '12px 18px',
+              border: '2px solid var(--color-teal)',
+              borderLeft: '10px solid var(--color-teal)',
+              marginBottom: '18px',
+              padding: '16px 20px',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
+              boxShadow: 'var(--shadow-hard)',
+              position: 'relative',
+              overflow: 'hidden',
+              flexWrap: 'wrap',
+              gap: '16px',
             }}
           >
-            <div>
-              <span className="stamp stamp-resolved">RESOLVED</span>
-              <span className="mono" style={{ marginLeft: '12px', fontSize: '0.85rem', fontWeight: 700 }}>
-                INCIDENT OFFICIALLY RESOLVED AND CLOSED
-              </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
+              {/* Authentically Stamped Oxidised Teal Physical Rubber Seal */}
+              <div className="stamped-resolved-seal">
+                <span style={{ fontSize: '0.62rem', letterSpacing: '0.15em', opacity: 0.9 }}>OFFICIAL DISPATCH</span>
+                <span style={{ fontSize: '1.25rem', letterSpacing: '0.15em', lineHeight: 1.1 }}>RESOLVED</span>
+                <span style={{ fontSize: '0.55rem', letterSpacing: '0.1em', marginTop: '2px' }}>VERIFIED & CLOSED</span>
+              </div>
+
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className="mono" style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--color-teal)' }}>
+                    INCIDENT WORK ORDER COMPLETED & CLOSED
+                  </span>
+                </div>
+                <div className="mono" style={{ fontSize: '0.78rem', color: 'var(--color-ink-muted)', marginTop: '4px' }}>
+                  STATUS SCRIBED TO COMETCHAT CLOUD · ALL UNITS STOOD DOWN
+                </div>
+              </div>
             </div>
-            <span className="mono" style={{ fontSize: '0.78rem', color: 'var(--color-teal)' }}>
-              CHANNEL ARCHIVED
-            </span>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <button
+                onClick={() => navigate(`/report/${guid}`)}
+                className="btn btn-teal"
+                style={{ fontSize: '0.82rem', padding: '10px 18px', boxShadow: 'var(--shadow-hard)' }}
+              >
+                📄 VIEW SERVICE REPORT →
+              </button>
+            </div>
           </div>
         )}
 
