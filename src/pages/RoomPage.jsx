@@ -10,23 +10,25 @@ export default function RoomPage({ currentUser }) {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [activeRung, setActiveRung] = useState('CHAT'); // 'CHAT' | 'VOICE' | 'VIDEO'
-  const [callStatus, setCallStatus] = useState(null); // null | 'in-call' | 'ended'
   const [callDuration, setCallDuration] = useState(0);
   const [isResolved, setIsResolved] = useState(false);
-  const [showResolvedStamp, setShowResolvedStamp] = useState(false);
   const [typingUser, setTypingUser] = useState(null);
-  const [lightboxImg, setLightboxImg] = useState(null);
+  const [lightboxPlate, setLightboxPlate] = useState(null);
   const [isSending, setIsSending] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
+  const [onlineUserMap, setOnlineUserMap] = useState({});
 
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
 
   // Load group details & previous messages
   useEffect(() => {
     async function loadRoom() {
       if (!guid) return;
       try {
-        console.log(`[RescueRoom] Fetching group ${guid}...`);
+        console.log(`[RescueRoom] Fetching incident channel ${guid}...`);
         const grp = await CometChat.getGroup(guid);
         setGroup(grp);
 
@@ -55,10 +57,10 @@ export default function RoomPage({ currentUser }) {
     loadRoom();
   }, [guid]);
 
-  // Real-time message & typing listener
+  // Real-time message & typing listener (Prompt 4)
   useEffect(() => {
     if (!guid) return;
-    const listenerId = `room_listener_${guid}_${Date.now()}`;
+    const listenerId = `room_msg_listener_${guid}_${Date.now()}`;
 
     CometChat.addMessageListener(
       listenerId,
@@ -76,7 +78,9 @@ export default function RoomPage({ currentUser }) {
         onTypingStarted: (typingIndicator) => {
           if (typingIndicator.getReceiverId() === guid) {
             const sender = typingIndicator.getSender();
-            setTypingUser(sender.getName());
+            if (sender && sender.getUid() !== currentUser?.uid) {
+              setTypingUser(sender.getName());
+            }
           }
         },
         onTypingEnded: (typingIndicator) => {
@@ -87,17 +91,33 @@ export default function RoomPage({ currentUser }) {
       })
     );
 
+    // Presence listener for online/offline updates (Prompt 4)
+    const presenceListenerId = `presence_listener_${guid}_${Date.now()}`;
+    CometChat.addUserListener(
+      presenceListenerId,
+      new CometChat.UserListener({
+        onUserOnline: (user) => {
+          setOnlineUserMap((prev) => ({ ...prev, [user.getUid()]: true }));
+        },
+        onUserOffline: (user) => {
+          setOnlineUserMap((prev) => ({ ...prev, [user.getUid()]: false }));
+        },
+      })
+    );
+
     return () => {
       CometChat.removeMessageListener(listenerId);
+      CometChat.removeUserListener(presenceListenerId);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     };
-  }, [guid]);
+  }, [guid, currentUser]);
 
   // Auto scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, typingUser]);
 
-  // Handle call timer when on VOICE or VIDEO rung
+  // Call duration counter when escalated
   useEffect(() => {
     let interval = null;
     if (activeRung !== 'CHAT') {
@@ -117,6 +137,24 @@ export default function RoomPage({ currentUser }) {
     return `${mins}:${s}`;
   };
 
+  // Handle typing indicator trigger
+  const handleInputChange = (e) => {
+    setInputText(e.target.value);
+    if (!guid) return;
+
+    try {
+      const indicator = new CometChat.TypingIndicator(guid, CometChat.RECEIVER_TYPE.GROUP);
+      CometChat.startTyping(indicator);
+
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => {
+        CometChat.endTyping(indicator);
+      }, 1800);
+    } catch (err) {
+      console.warn('Typing indicator error:', err);
+    }
+  };
+
   // Send Text Message
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -127,6 +165,10 @@ export default function RoomPage({ currentUser }) {
     setInputText('');
 
     try {
+      // Clear typing indicator immediately
+      const indicator = new CometChat.TypingIndicator(guid, CometChat.RECEIVER_TYPE.GROUP);
+      CometChat.endTyping(indicator);
+
       const textMessage = new CometChat.TextMessage(
         guid,
         textToSend,
@@ -135,42 +177,65 @@ export default function RoomPage({ currentUser }) {
       const sent = await CometChat.sendMessage(textMessage);
       setMessages((prev) => [...prev, sent]);
     } catch (err) {
-      console.error('Failed to send message:', err);
+      console.error('Failed to send text message:', err);
     } finally {
       setIsSending(false);
     }
   };
 
-  // Send Media / Photo Message (Evidence Plate)
+  // Send Media / Photo Message (Evidence Plate - Prompt 5)
   const handleMediaUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Prompt 5 Validation: Images only, max 5MB
+    setUploadError(null);
+    if (!file.type.startsWith('image/')) {
+      setUploadError('Invalid file: only photographic image files (JPG, PNG, WEBP) are accepted.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError('File size exceeds 5MB limit. Please attach a compressed image.');
+      return;
+    }
+
     setIsSending(true);
     try {
+      console.log(`[RescueRoom] Uploading evidence plate: ${file.name} (${file.size} bytes)...`);
       const mediaMessage = new CometChat.MediaMessage(
         guid,
         file,
         CometChat.MESSAGE_TYPE.IMAGE,
         CometChat.RECEIVER_TYPE.GROUP
       );
+
+      // Store caption and plate timestamp in metadata
+      const plateMeta = {
+        isEvidencePlate: true,
+        fileName: file.name,
+        uploadedAt: Date.now(),
+        senderCallsign: currentUser?.callsign || 'OPERATOR',
+      };
+      mediaMessage.setMetadata(plateMeta);
+
       const sent = await CometChat.sendMediaMessage(mediaMessage);
       setMessages((prev) => [...prev, sent]);
+      console.log(`[RescueRoom] Evidence plate transmitted successfully.`);
     } catch (err) {
-      console.error('Failed to upload image:', err);
-      alert('Photo upload failed. Please ensure file is a valid image under 5MB.');
+      console.error('Failed to upload evidence plate:', err);
+      setUploadError(err?.message || 'Transmission failed. Check network connection.');
     } finally {
       setIsSending(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
+      if (cameraInputRef.current) cameraInputRef.current.value = '';
     }
   };
 
-  // Escalation Ladder handler
+  // Escalation Ladder handler (Prompt 4 & 6)
   const handleClimbLadder = async (rung) => {
     if (rung === activeRung) return;
 
     if (rung === 'CHAT') {
-      // Ending call and returning to chat
       if (activeRung !== 'CHAT' && callDuration > 0) {
         const sysMsg = new CometChat.TextMessage(
           guid,
@@ -188,11 +253,10 @@ export default function RoomPage({ currentUser }) {
       return;
     }
 
-    // Climbing to VOICE or VIDEO
     setActiveRung(rung);
     const logCallStart = new CometChat.TextMessage(
       guid,
-      `🚨 ESCALATION LADDER CLIMBED TO [${rung} CALL] BY ${currentUser?.name.toUpperCase()}`,
+      `🚨 ESCALATION LADDER CLIMBED TO [${rung} CALL] BY ${currentUser?.name.toUpperCase()} (${currentUser?.callsign})`,
       CometChat.RECEIVER_TYPE.GROUP
     );
     try {
@@ -205,9 +269,7 @@ export default function RoomPage({ currentUser }) {
 
   // Resolve incident
   const handleResolveIncident = async () => {
-    setShowResolvedStamp(true);
     setIsResolved(true);
-
     try {
       const resolveMsg = new CometChat.TextMessage(
         guid,
@@ -230,7 +292,10 @@ export default function RoomPage({ currentUser }) {
   }
   const isCritical = metadata.severity === 'CRITICAL';
 
-  // Responders roster
+  // Count image plates for sequential numbering (PLATE 01, PLATE 02...)
+  let plateCounter = 0;
+
+  // Company responders list
   const companyResponders = DEMO_USERS.filter((u) => u.companyId === currentUser?.companyId);
 
   return (
@@ -252,14 +317,14 @@ export default function RoomPage({ currentUser }) {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span className={`stamp ${isCritical ? 'stamp-critical' : 'stamp-serious'}`}>
-                {metadata.severity || 'INCIDENT ROOM'}
+                {metadata.severity || 'INCIDENT CHANNEL'}
               </span>
               <span className="mono" style={{ fontSize: '0.8rem', color: 'var(--color-ink-muted)' }}>
-                CHANNEL: {guid}
+                ROOM: {guid}
               </span>
             </div>
-            <h1 style={{ fontSize: '1.8rem', margin: '4px 0 0' }}>
-              {group?.getName() || 'INCIDENT CHANNEL ACTIVE'}
+            <h1 style={{ fontSize: '1.85rem', margin: '4px 0 0' }}>
+              {group?.getName() || 'LIVE INCIDENT CHANNEL'}
             </h1>
           </div>
 
@@ -287,11 +352,11 @@ export default function RoomPage({ currentUser }) {
         {/* Critical Severity Hazard Tape Across Room */}
         {isCritical && (
           <div className="hazard-strip-banner" style={{ marginBottom: '16px' }}>
-            <span>⚠ CRITICAL WORK STOPPAGE IN EFFECT · HIGH PRIORITY ESCALATION</span>
+            <span>⚠ CRITICAL WORK STOPPAGE · LIVE INCIDENT CHANNEL ACTIVE</span>
           </div>
         )}
 
-        {/* Resolved Stamp Overlay Indicator */}
+        {/* Resolved Banner */}
         {isResolved && (
           <div
             className="paper-card"
@@ -308,11 +373,11 @@ export default function RoomPage({ currentUser }) {
             <div>
               <span className="stamp stamp-resolved">RESOLVED</span>
               <span className="mono" style={{ marginLeft: '12px', fontSize: '0.85rem', fontWeight: 700 }}>
-                INCIDENT HAS BEEN CLOSED AND SIGNED OFF
+                INCIDENT OFFICIALLY RESOLVED AND CLOSED
               </span>
             </div>
             <span className="mono" style={{ fontSize: '0.78rem', color: 'var(--color-teal)' }}>
-              LOG ARCHIVED
+              CHANNEL ARCHIVED
             </span>
           </div>
         )}
@@ -321,9 +386,9 @@ export default function RoomPage({ currentUser }) {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: '140px 1fr 280px',
-            gap: '20px',
-            minHeight: '620px',
+            gridTemplateColumns: '150px 1fr 300px',
+            gap: '24px',
+            minHeight: '640px',
           }}
         >
           {/* Panel 1: The Escalation Ladder (Left Column) */}
@@ -338,27 +403,41 @@ export default function RoomPage({ currentUser }) {
               border: 'var(--border-ink)',
             }}
           >
-            <div className="mono" style={{ fontSize: '0.65rem', fontWeight: 700, marginBottom: '16px', textAlign: 'center' }}>
+            <div className="mono" style={{ fontSize: '0.68rem', fontWeight: 700, marginBottom: '16px', textAlign: 'center' }}>
               ESCALATION<br />LADDER
             </div>
 
-            {/* Vertical Ladder Control */}
             <div
               style={{
                 display: 'flex',
                 flexDirection: 'column-reverse',
-                gap: '12px',
+                gap: '14px',
                 width: '100%',
                 flex: 1,
                 justifyContent: 'center',
               }}
             >
               {[
-                { id: 'CHAT', label: '1. CHAT', icon: '💬', color: 'var(--color-bone)' },
-                { id: 'VOICE', label: '2. VOICE', icon: '🎙', color: 'var(--color-hazard)' },
-                { id: 'VIDEO', label: '3. VIDEO', icon: '📹', color: 'var(--color-vermilion)' },
+                { id: 'CHAT', label: '1. CHAT', icon: '💬' },
+                { id: 'VOICE', label: '2. VOICE', icon: '🎙' },
+                { id: 'VIDEO', label: '3. VIDEO', icon: '📹' },
               ].map((rung) => {
                 const isActive = activeRung === rung.id;
+                let btnBg = 'var(--color-bone)';
+                let btnColor = 'var(--color-ink)';
+                if (isActive) {
+                  if (rung.id === 'VIDEO') {
+                    btnBg = 'var(--color-vermilion)';
+                    btnColor = '#FFFFFF';
+                  } else if (rung.id === 'VOICE') {
+                    btnBg = 'var(--color-hazard)';
+                    btnColor = 'var(--color-ink)';
+                  } else {
+                    btnBg = 'var(--color-ink)';
+                    btnColor = '#FFFFFF';
+                  }
+                }
+
                 return (
                   <button
                     key={rung.id}
@@ -367,8 +446,8 @@ export default function RoomPage({ currentUser }) {
                     style={{
                       width: '100%',
                       padding: '18px 8px',
-                      backgroundColor: isActive ? (rung.id === 'VIDEO' ? 'var(--color-vermilion)' : rung.id === 'VOICE' ? 'var(--color-hazard)' : 'var(--color-ink)') : 'var(--color-bone)',
-                      color: isActive ? (rung.id === 'VOICE' ? 'var(--color-ink)' : '#FFFFFF') : 'var(--color-ink)',
+                      backgroundColor: btnBg,
+                      color: btnColor,
                       border: 'var(--border-ink-thick)',
                       boxShadow: isActive ? 'var(--shadow-hard-lg)' : 'var(--shadow-hard-sm)',
                       transform: isActive ? 'translate(-2px, -2px)' : 'none',
@@ -376,15 +455,15 @@ export default function RoomPage({ currentUser }) {
                       gap: '4px',
                     }}
                   >
-                    <span style={{ fontSize: '1.3rem' }}>{rung.icon}</span>
-                    <span style={{ fontSize: '0.78rem', fontWeight: 800 }}>{rung.label}</span>
+                    <span style={{ fontSize: '1.4rem' }}>{rung.icon}</span>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 800 }}>{rung.label}</span>
                   </button>
                 );
               })}
             </div>
 
             <div className="mono" style={{ fontSize: '0.62rem', color: 'var(--color-ink-muted)', marginTop: '16px', textAlign: 'center' }}>
-              TAP HIGHER RUNG TO ESCALATE
+              CLIMB RUNG TO ESCALATE
             </div>
           </div>
 
@@ -423,7 +502,7 @@ export default function RoomPage({ currentUser }) {
                   {activeRung === 'VIDEO' ? '📹 TACTICAL VIDEO FEED' : '🎙 FIELD RADIO VOICE CHANNEL'}
                 </h2>
 
-                <div className="timer-display mono" style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--color-hazard)', marginBottom: '24px' }}>
+                <div className="timer-display mono" style={{ fontSize: '2.6rem', fontWeight: 800, color: 'var(--color-hazard)', marginBottom: '24px' }}>
                   {formatCallTime(callDuration)}
                 </div>
 
@@ -437,10 +516,10 @@ export default function RoomPage({ currentUser }) {
                   }}
                 >
                   <div className="mono" style={{ fontSize: '0.75rem', color: '#888' }}>
-                    CHANNEL PARTICIPANTS:
+                    TRANSMITTING STATION:
                   </div>
                   <div className="mono" style={{ fontSize: '0.95rem', fontWeight: 700, marginTop: '4px' }}>
-                    {currentUser?.name.toUpperCase()} (TRANSMITTING) · ALL ROSTER LISTENERS
+                    {currentUser?.name.toUpperCase()} ({currentUser?.callsign}) · ALL ROSTER CONNECTED
                   </div>
                 </div>
 
@@ -458,7 +537,7 @@ export default function RoomPage({ currentUser }) {
                 {/* Chat Log Header */}
                 <div
                   style={{
-                    padding: '10px 16px',
+                    padding: '12px 18px',
                     borderBottom: 'var(--border-ink)',
                     backgroundColor: 'var(--color-paper-light)',
                     display: 'flex',
@@ -466,50 +545,79 @@ export default function RoomPage({ currentUser }) {
                     alignItems: 'center',
                   }}
                 >
-                  <span className="mono" style={{ fontSize: '0.75rem', fontWeight: 700 }}>
-                    INCIDENT LOG TICKER · CHAT CHANNEL
+                  <span className="mono" style={{ fontSize: '0.78rem', fontWeight: 700 }}>
+                    DISPATCH TRANSMISSION LOG · REAL-TIME TICKER
                   </span>
                   <span className="mono" style={{ fontSize: '0.72rem', color: 'var(--color-ink-muted)' }}>
-                    REAL-TIME SYNC ACTIVE
+                    SOCKET CONNECTED
                   </span>
                 </div>
+
+                {/* Error Banner if upload failed */}
+                {uploadError && (
+                  <div
+                    style={{
+                      backgroundColor: '#FFEBE8',
+                      borderBottom: 'var(--border-ink)',
+                      padding: '8px 16px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <span className="mono" style={{ fontSize: '0.75rem', color: 'var(--color-vermilion)' }}>
+                      ⚠ {uploadError}
+                    </span>
+                    <button
+                      onClick={() => setUploadError(null)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
 
                 {/* Messages Feed */}
                 <div
                   style={{
                     flex: 1,
                     overflowY: 'auto',
-                    padding: '16px 20px',
+                    padding: '18px 24px',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '12px',
+                    gap: '14px',
                     maxHeight: '480px',
                   }}
                 >
                   {messages.length === 0 ? (
                     <div className="mono" style={{ textAlign: 'center', padding: '40px', color: 'var(--color-ink-muted)' }}>
-                      NO TRANSMISSIONS YET. BEGIN BY POSTING FAULT DETAILS OR PHOTOS BELOW.
+                      CHANNEL OPEN. TRANSMIT FAULT DETAILS OR CAPTURE EVIDENCE PLATES BELOW.
                     </div>
                   ) : (
                     messages.map((msg, idx) => {
                       const sender = msg.getSender ? msg.getSender() : null;
-                      const senderName = sender ? sender.getName() : 'SYSTEM';
+                      const senderName = sender ? sender.getName() : 'SYSTEM DISPATCH';
                       const isMe = sender && sender.getUid() === currentUser?.uid;
                       const timeStr = msg.getSentAt
                         ? new Date(msg.getSentAt() * 1000).toISOString().substring(11, 19)
                         : new Date().toISOString().substring(11, 19);
 
                       const isMedia = msg.getType && msg.getType() === CometChat.MESSAGE_TYPE.IMAGE;
+                      let plateNumStr = '';
+                      if (isMedia) {
+                        plateCounter++;
+                        plateNumStr = `PLATE ${String(plateCounter).padStart(2, '0')}`;
+                      }
 
                       return (
                         <div
                           key={msg.getId ? msg.getId() : idx}
                           style={{
-                            borderBottom: '1px dashed rgba(28, 27, 24, 0.25)',
-                            paddingBottom: '10px',
+                            borderBottom: '1px dashed rgba(28, 27, 24, 0.2)',
+                            paddingBottom: '12px',
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: '4px',
+                            gap: '6px',
                           }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -519,57 +627,108 @@ export default function RoomPage({ currentUser }) {
                             <span
                               style={{
                                 fontWeight: 800,
-                                fontSize: '0.85rem',
+                                fontSize: '0.88rem',
                                 color: isMe ? 'var(--color-vermilion)' : 'var(--color-ink)',
                               }}
                             >
                               {senderName.toUpperCase()}
                             </span>
                             {isMe && (
-                              <span className="stamp" style={{ fontSize: '0.58rem', padding: '1px 4px' }}>
+                              <span className="stamp" style={{ fontSize: '0.58rem', padding: '1px 5px' }}>
                                 YOU
                               </span>
                             )}
                           </div>
 
-                          {/* Image Evidence Plate or Text */}
+                          {/* Prompt 5: Industrial Hand-Crafted Evidence Plate */}
                           {isMedia ? (
                             <div
                               style={{
                                 marginTop: '6px',
-                                border: 'var(--border-ink)',
-                                padding: '8px',
+                                border: 'var(--border-ink-thick)',
                                 backgroundColor: 'var(--color-paper-light)',
-                                display: 'inline-block',
-                                maxWidth: '320px',
+                                boxShadow: 'var(--shadow-hard)',
+                                maxWidth: '360px',
+                                padding: '10px',
                                 cursor: 'pointer',
+                                transition: 'var(--transition-tactile)',
                               }}
-                              onClick={() => setLightboxImg(msg.getData().url)}
+                              onClick={() =>
+                                setLightboxPlate({
+                                  url: msg.getData().url,
+                                  plateNum: plateNumStr,
+                                  sender: senderName,
+                                  time: timeStr,
+                                })
+                              }
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translate(-2px, -2px)';
+                                e.currentTarget.style.boxShadow = 'var(--shadow-hard-lg)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'none';
+                                e.currentTarget.style.boxShadow = 'var(--shadow-hard)';
+                              }}
                             >
-                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                <span className="stamp stamp-critical" style={{ fontSize: '0.62rem' }}>
-                                  EVIDENCE PLATE
-                                </span>
-                                <span className="mono" style={{ fontSize: '0.65rem' }}>CLICK TO INSPECT</span>
-                              </div>
-                              <img
-                                src={msg.getData().url}
-                                alt="Incident fault evidence"
+                              {/* Plate Header Bar */}
+                              <div
                                 style={{
-                                  width: '100%',
-                                  maxHeight: '220px',
-                                  objectFit: 'cover',
-                                  border: '1px solid var(--color-ink)',
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                  borderBottom: 'var(--border-ink)',
+                                  paddingBottom: '6px',
+                                  marginBottom: '8px',
                                 }}
-                              />
+                              >
+                                <span className="stamp stamp-critical" style={{ fontSize: '0.68rem', padding: '2px 6px' }}>
+                                  {plateNumStr}
+                                </span>
+                                <span className="mono" style={{ fontSize: '0.65rem', color: 'var(--color-ink-muted)' }}>
+                                  FAULT EVIDENCE PLATE
+                                </span>
+                              </div>
+
+                              {/* Photo Frame */}
+                              <div style={{ border: '1px solid var(--color-ink)', backgroundColor: '#000', overflow: 'hidden' }}>
+                                <img
+                                  src={msg.getData().url}
+                                  alt="Fault diagnostic evidence"
+                                  style={{
+                                    width: '100%',
+                                    maxHeight: '240px',
+                                    objectFit: 'cover',
+                                    display: 'block',
+                                  }}
+                                />
+                              </div>
+
+                              {/* Plate Footer Stamp */}
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                  marginTop: '8px',
+                                  paddingTop: '6px',
+                                  borderTop: '1px dashed var(--color-ink-subtle)',
+                                }}
+                              >
+                                <span className="mono" style={{ fontSize: '0.68rem', color: 'var(--color-ink-muted)' }}>
+                                  TAP TO INSPECT FULL-RES
+                                </span>
+                                <span className="mono" style={{ fontSize: '0.68rem', fontWeight: 700 }}>
+                                  🔍 INSPECT
+                                </span>
+                              </div>
                             </div>
                           ) : (
                             <div
                               className="mono"
                               style={{
-                                fontSize: '0.92rem',
+                                fontSize: '0.94rem',
                                 whiteSpace: 'pre-wrap',
-                                lineHeight: 1.4,
+                                lineHeight: 1.45,
                                 color: 'var(--color-ink)',
                               }}
                             >
@@ -581,17 +740,29 @@ export default function RoomPage({ currentUser }) {
                     })
                   )}
 
-                  {/* Typing Indicator */}
+                  {/* Real-Time Typing Indicator (Prompt 4) */}
                   {typingUser && (
-                    <div className="mono" style={{ fontSize: '0.75rem', color: 'var(--color-vermilion)' }}>
-                      ✍ {typingUser.toUpperCase()} IS TRANSMITTING...
+                    <div
+                      className="mono"
+                      style={{
+                        fontSize: '0.78rem',
+                        fontWeight: 700,
+                        color: 'var(--color-vermilion)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '4px 0',
+                      }}
+                    >
+                      <span>✍</span>
+                      <span>{typingUser.toUpperCase()} IS TRANSMITTING...</span>
                     </div>
                   )}
 
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Input Bar with Photo Camera & Text Field */}
+                {/* Input Bar with Camera & File Buttons */}
                 <form
                   onSubmit={handleSendMessage}
                   style={{
@@ -603,10 +774,29 @@ export default function RoomPage({ currentUser }) {
                     gap: '10px',
                   }}
                 >
-                  {/* Photo / Evidence Plate Upload */}
+                  {/* Native Mobile Camera Capture Button (Prompt 5) */}
                   <input
                     type="file"
                     accept="image/*"
+                    capture="environment"
+                    ref={cameraInputRef}
+                    onChange={handleMediaUpload}
+                    style={{ display: 'none' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => cameraInputRef.current?.click()}
+                    className="btn btn-vermilion"
+                    style={{ padding: '9px 12px', fontSize: '0.8rem' }}
+                    title="Capture live fault photo with camera"
+                  >
+                    📸 CAMERA
+                  </button>
+
+                  {/* Desktop File Picker (Prompt 5) */}
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
                     ref={fileInputRef}
                     onChange={handleMediaUpload}
                     style={{ display: 'none' }}
@@ -616,26 +806,27 @@ export default function RoomPage({ currentUser }) {
                     onClick={() => fileInputRef.current?.click()}
                     className="btn btn-hazard"
                     style={{ padding: '9px 12px', fontSize: '0.8rem' }}
-                    title="Attach Evidence Photo"
+                    title="Upload photo from disk"
                   >
-                    📷 PHOTO
+                    📁 ATTACH
                   </button>
 
+                  {/* Text Input with Real-time Typing Notification (Prompt 4) */}
                   <input
                     type="text"
                     className="form-input"
-                    placeholder="Type dispatch transmission or status update..."
+                    placeholder="Type dispatch transmission or maintenance log..."
                     value={inputText}
-                    onChange={(e) => setInputText(e.target.value)}
+                    onChange={handleInputChange}
                     disabled={isSending}
                     style={{ flex: 1 }}
                   />
 
                   <button
                     type="submit"
-                    className="btn btn-vermilion"
+                    className="btn btn-dark"
                     disabled={isSending || !inputText.trim()}
-                    style={{ padding: '9px 18px', fontSize: '0.85rem' }}
+                    style={{ padding: '9px 20px', fontSize: '0.85rem' }}
                   >
                     {isSending ? 'SENDING...' : 'TRANSMIT →'}
                   </button>
@@ -649,7 +840,7 @@ export default function RoomPage({ currentUser }) {
             className="paper-card"
             style={{
               backgroundColor: 'var(--color-paper-light)',
-              padding: '16px',
+              padding: '18px',
               display: 'flex',
               flexDirection: 'column',
               border: 'var(--border-ink)',
@@ -658,42 +849,46 @@ export default function RoomPage({ currentUser }) {
             <div
               style={{
                 borderBottom: 'var(--border-ink)',
-                paddingBottom: '8px',
-                marginBottom: '14px',
+                paddingBottom: '10px',
+                marginBottom: '16px',
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ fontSize: '1rem', margin: 0 }}>WHO'S HERE</h3>
+                <h3 style={{ fontSize: '1.05rem', margin: 0 }}>WHO'S HERE</h3>
                 <span className="presence-dot" />
               </div>
-              <div className="mono" style={{ fontSize: '0.68rem', color: 'var(--color-ink-muted)' }}>
+              <div className="mono" style={{ fontSize: '0.7rem', color: 'var(--color-ink-muted)', marginTop: '2px' }}>
                 {currentUser?.companyName.toUpperCase()} ROSTER
               </div>
             </div>
 
-            {/* List of Responders */}
+            {/* List of Responders with Presence (Prompt 4) */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flex: 1 }}>
               {companyResponders.map((u) => {
-                const isOnline = true; // In room all company roster is available
+                const isOnline = onlineUserMap[u.uid] ?? true;
+
                 return (
                   <div
                     key={u.uid}
                     style={{
-                      border: '1px solid var(--color-ink)',
-                      padding: '8px 10px',
+                      border: 'var(--border-ink-thin)',
+                      padding: '10px 12px',
                       backgroundColor: 'var(--color-bone)',
                       boxShadow: 'var(--shadow-hard-sm)',
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{u.name}</span>
-                      <span className="presence-dot" />
+                      <span style={{ fontWeight: 700, fontSize: '0.88rem' }}>{u.name}</span>
+                      <span
+                        className={`presence-dot ${!isOnline ? 'offline' : ''}`}
+                        title={isOnline ? 'Online' : 'Offline'}
+                      />
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2px' }}>
-                      <span className="mono" style={{ fontSize: '0.65rem', color: 'var(--color-ink-muted)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+                      <span className="stamp" style={{ fontSize: '0.62rem', padding: '1px 5px' }}>
                         {u.role.toUpperCase()}
                       </span>
-                      <span className="mono" style={{ fontSize: '0.65rem', color: 'var(--color-ink-muted)' }}>
+                      <span className="mono" style={{ fontSize: '0.68rem', color: 'var(--color-ink-muted)' }}>
                         {u.callsign}
                       </span>
                     </div>
@@ -713,15 +908,22 @@ export default function RoomPage({ currentUser }) {
               <div className="mono" style={{ fontSize: '0.68rem', color: 'var(--color-ink-muted)' }}>
                 EQUIPMENT UNIT:
               </div>
-              <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>
+              <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>
                 {metadata.equipment || group?.getName()}
+              </div>
+
+              <div className="mono" style={{ fontSize: '0.68rem', color: 'var(--color-ink-muted)', marginTop: '8px' }}>
+                INCIDENT ID:
+              </div>
+              <div className="mono" style={{ fontWeight: 700, fontSize: '0.9rem' }}>
+                {metadata.incidentNum || guid}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Lightbox for Evidence Plate */}
-        {lightboxImg && (
+        {/* Full-Screen Evidence Inspection Lightbox (Prompt 5) */}
+        {lightboxPlate && (
           <div
             style={{
               position: 'fixed',
@@ -737,14 +939,76 @@ export default function RoomPage({ currentUser }) {
               zIndex: 10000,
               padding: '24px',
             }}
-            onClick={() => setLightboxImg(null)}
+            onClick={() => setLightboxPlate(null)}
           >
-            <div className="paper-card" style={{ maxWidth: '800px', backgroundColor: 'var(--color-bone)' }} onClick={(e) => e.stopPropagation()}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <span className="stamp stamp-critical">EVIDENCE INSPECTION</span>
-                <button onClick={() => setLightboxImg(null)} className="btn">✕ CLOSE</button>
+            <div
+              className="paper-card"
+              style={{
+                maxWidth: '900px',
+                width: '100%',
+                backgroundColor: 'var(--color-bone)',
+                border: 'var(--border-ink-thick)',
+                boxShadow: 'var(--shadow-hard-xl)',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  borderBottom: 'var(--border-ink)',
+                  paddingBottom: '12px',
+                  marginBottom: '16px',
+                }}
+              >
+                <div>
+                  <span className="stamp stamp-critical">{lightboxPlate.plateNum}</span>
+                  <span className="mono" style={{ marginLeft: '10px', fontSize: '0.85rem', fontWeight: 700 }}>
+                    FAULT EVIDENCE INSPECTION · {lightboxPlate.sender.toUpperCase()} [{lightboxPlate.time} UTC]
+                  </span>
+                </div>
+                <button onClick={() => setLightboxPlate(null)} className="btn btn-hazard">
+                  ✕ CLOSE INSPECTION
+                </button>
               </div>
-              <img src={lightboxImg} alt="Fault plate" style={{ width: '100%', maxHeight: '70vh', objectFit: 'contain' }} />
+
+              <div style={{ border: '2px solid var(--color-ink)', backgroundColor: '#000', overflow: 'hidden' }}>
+                <img
+                  src={lightboxPlate.url}
+                  alt="Full-res fault inspection"
+                  style={{
+                    width: '100%',
+                    maxHeight: '68vh',
+                    objectFit: 'contain',
+                    display: 'block',
+                  }}
+                />
+              </div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginTop: '12px',
+                  paddingTop: '8px',
+                  borderTop: '1px dashed var(--color-ink-subtle)',
+                }}
+              >
+                <span className="mono" style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)' }}>
+                  DIAGNOSTIC EVIDENCE STORED ON COMETCHAT CLOUD
+                </span>
+                <a
+                  href={lightboxPlate.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn"
+                  style={{ fontSize: '0.72rem', padding: '4px 10px' }}
+                >
+                  OPEN ORIGINAL FILE ↗
+                </a>
+              </div>
             </div>
           </div>
         )}

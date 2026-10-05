@@ -97,6 +97,22 @@ export default function OperatorPage({ currentUser }) {
       await CometChat.createGroup(group);
       console.log(`[RescueRoom] Incident room created on CometChat.`);
 
+      // Add company responders (Mechanic and Dispatcher) to room
+      try {
+        const otherResponders = DEMO_USERS.filter(
+          (u) => u.companyId === currentUser.companyId && u.uid !== currentUser.uid
+        );
+        const membersList = otherResponders.map(
+          (u) => new CometChat.GroupMember(u.uid, CometChat.GROUP_MEMBER_SCOPE.PARTICIPANT)
+        );
+        if (membersList.length > 0) {
+          await CometChat.addMembersToGroup(rawGuid, membersList, []);
+          console.log(`[RescueRoom] Added ${membersList.length} responders to incident room.`);
+        }
+      } catch (addErr) {
+        console.warn('[RescueRoom] Non-blocking notice adding responders:', addErr);
+      }
+
       // Post initial dispatch log message
       const initialText = `🚨 EMERGENCY DISPATCH · INCIDENT REPORT\n` +
         `----------------------------------------\n` +
