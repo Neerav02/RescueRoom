@@ -1,0 +1,314 @@
+/* ==========================================================================
+   RescueRoom — Field Manual Stylesheet & Utility Classes
+   ========================================================================== */
+
+@import './design-tokens.css';
+
+/* 1. Global Box-Sizing & Reset */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-height: 100vh;
+  font-family: var(--font-heading);
+  color: var(--color-ink);
+  background-color: var(--color-bone);
+  /* Tactile Paper-Grain Background Texture */
+  background-image: 
+    radial-gradient(#1c1b18 0.75px, transparent 0.75px),
+    linear-gradient(to bottom, rgba(239, 232, 216, 0.95), rgba(226, 218, 196, 0.95));
+  background-size: 16px 16px, 100% 100%;
+  background-attachment: fixed;
+  line-height: 1.45;
+  overflow-x: hidden;
+}
+
+/* 2. Typography Styles */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  color: var(--color-ink);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+.mono,
+code,
+pre,
+.stamp,
+.badge-code,
+.timer-display {
+  font-family: var(--font-mono);
+}
+
+/* 3. Hazard Tape Utilities */
+.hazard-tape {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--color-hazard),
+    var(--color-hazard) 14px,
+    var(--color-ink) 14px,
+    var(--color-ink) 28px
+  );
+  border-top: var(--border-ink);
+  border-bottom: var(--border-ink);
+}
+
+.hazard-tape-sm {
+  height: 10px;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--color-hazard),
+    var(--color-hazard) 8px,
+    var(--color-ink) 8px,
+    var(--color-ink) 16px
+  );
+  border-top: 1px solid var(--color-ink);
+  border-bottom: 1px solid var(--color-ink);
+}
+
+.hazard-strip-banner {
+  padding: 8px 16px;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-ink);
+  background-color: var(--color-hazard);
+  border: var(--border-ink);
+  box-shadow: var(--shadow-hard);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* 4. Tactile Buttons (Zero Rounded Corners, Hard Offset Shadows) */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-ink);
+  background-color: var(--color-bone);
+  border: var(--border-ink);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-hard);
+  cursor: pointer;
+  user-select: none;
+  transition: var(--transition-tactile);
+  text-decoration: none;
+}
+
+.btn:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--shadow-hard-lg);
+}
+
+.btn:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: var(--shadow-hard-pressed);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Button Variants */
+.btn-vermilion {
+  background-color: var(--color-vermilion);
+  color: var(--color-bone);
+  border-color: var(--color-ink);
+}
+
+.btn-teal {
+  background-color: var(--color-teal);
+  color: var(--color-bone);
+}
+
+.btn-hazard {
+  background-color: var(--color-hazard);
+  color: var(--color-ink);
+}
+
+.btn-dark {
+  background-color: var(--color-dark-panel);
+  color: var(--color-bone);
+  border-color: var(--color-ink);
+}
+
+.btn-lg {
+  padding: 16px 28px;
+  font-size: 1.15rem;
+  letter-spacing: 0.05em;
+  box-shadow: var(--shadow-hard-lg);
+}
+
+/* Emergency SOMETHING'S WRONG Action Button */
+.btn-emergency {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 24px 20px;
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  background-color: var(--color-vermilion);
+  color: #FFFFFF;
+  border: var(--border-ink-thick);
+  box-shadow: var(--shadow-hard-xl);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: var(--transition-tactile);
+}
+
+.btn-emergency:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 10px 10px 0px var(--color-ink);
+}
+
+.btn-emergency:active {
+  transform: translate(4px, 4px);
+  box-shadow: 2px 2px 0px var(--color-ink);
+}
+
+/* 5. Paper Cards & Containers */
+.paper-card {
+  background-color: var(--color-bone);
+  border: var(--border-ink);
+  box-shadow: var(--shadow-hard);
+  padding: 20px;
+  position: relative;
+}
+
+.paper-card-light {
+  background-color: var(--color-paper-light);
+  border: var(--border-ink);
+  box-shadow: var(--shadow-hard);
+  padding: 20px;
+}
+
+.dark-panel {
+  background-color: var(--color-dark-panel);
+  color: var(--color-bone);
+  border: var(--border-ink);
+  box-shadow: var(--shadow-hard-lg);
+}
+
+/* 6. Form Inputs & Manual Requisitions */
+.form-group {
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-label {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-ink-muted);
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  color: var(--color-ink);
+  background-color: var(--color-paper-light);
+  border: var(--border-ink);
+  border-radius: var(--border-radius);
+  box-shadow: inset 2px 2px 0px rgba(28, 27, 24, 0.08);
+  outline: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  background-color: #FFFFFF;
+  border-color: var(--color-vermilion);
+  box-shadow: var(--shadow-hard-sm);
+}
+
+/* 7. Badges & Stamped Statuses */
+.stamp {
+  display: inline-block;
+  padding: 4px 10px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border: var(--border-ink);
+  background-color: var(--color-paper-muted);
+  color: var(--color-ink);
+}
+
+.stamp-critical {
+  background-color: var(--color-vermilion);
+  color: #FFFFFF;
+}
+
+.stamp-serious {
+  background-color: var(--color-hazard);
+  color: var(--color-ink);
+}
+
+.stamp-minor {
+  background-color: var(--color-paper-light);
+  color: var(--color-ink);
+}
+
+.stamp-resolved {
+  background-color: var(--color-teal);
+  color: #FFFFFF;
+}
+
+/* Online Presence Indicator */
+.presence-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  background-color: var(--color-teal);
+  border: 1px solid var(--color-ink);
+}
+
+.presence-dot.offline {
+  background-color: var(--color-paper-dark);
+}
+
+/* 8. Utility Flex & Grid */
+.flex { display: flex; }
+.flex-col { display: flex; flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-xs { gap: var(--space-xs); }
+.gap-sm { gap: var(--space-sm); }
+.gap-md { gap: var(--space-md); }
+.gap-lg { gap: var(--space-lg); }

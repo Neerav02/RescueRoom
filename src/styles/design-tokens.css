@@ -1,0 +1,51 @@
+/* ==========================================================================
+   RescueRoom Design System — Design Tokens & CSS Variables
+   Field Manual Aesthetic: Workshop Manual × Rugged Dispatch Radio
+   ========================================================================== */
+
+:root {
+  /* Core 6-Color Custom Palette */
+  --color-bone: #EFE8D8;           /* Paper background */
+  --color-ink: #1C1B18;            /* Primary text, ink lines, borders */
+  --color-vermilion: #E4421E;      /* Alert, emergency, critical severity, call button */
+  --color-teal: #1F6F68;           /* Calm, resolved status, online dot, success */
+  --color-hazard: #F2B705;         /* Hazard yellow, highlights, warning stripes */
+  --color-dark-panel: #14201F;     /* Tactical dark panel for video/calls */
+
+  /* Neutral Paper Accents & Shades */
+  --color-paper-light: #F7F3E9;
+  --color-paper-muted: #E2DAC4;
+  --color-paper-dark: #D4C9AF;
+  --color-ink-muted: #535048;
+  --color-ink-subtle: #847F74;
+  --color-white: #FFFFFF;
+
+  /* Typography */
+  --font-heading: 'Bricolage Grotesque', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+
+  /* Field Manual Construction Rules */
+  --border-ink: 2px solid var(--color-ink);
+  --border-ink-thick: 3px solid var(--color-ink);
+  --border-ink-thin: 1px solid var(--color-ink);
+  --border-radius: 0px; /* Strictly square corners */
+
+  /* Hard Offset Shadows (zero blur, purely mechanical) */
+  --shadow-hard-sm: 2px 2px 0px var(--color-ink);
+  --shadow-hard: 3px 3px 0px var(--color-ink);
+  --shadow-hard-lg: 5px 5px 0px var(--color-ink);
+  --shadow-hard-xl: 8px 8px 0px var(--color-ink);
+  --shadow-hard-pressed: 1px 1px 0px var(--color-ink);
+
+  /* Spacing Scale */
+  --space-2xs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* Transitions */
+  --transition-tactile: transform 0.08s ease, box-shadow 0.08s ease;
+}
