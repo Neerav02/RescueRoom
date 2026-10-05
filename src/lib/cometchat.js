@@ -177,4 +177,35 @@ export async function logoutUser() {
   return CometChat.logout();
 }
 
+/**
+ * CometChat Calls SDK Initialization (Prompt 6)
+ */
+let callsInitPromise = null;
+let isCallsInitialized = false;
+
+export async function initCometChatCalls() {
+  if (isCallsInitialized) return true;
+  if (callsInitPromise) return callsInitPromise;
+
+  callsInitPromise = (async () => {
+    try {
+      const { CometChatCalls } = await import("@cometchat/calls-sdk-javascript");
+      const { APP_ID, REGION } = COMETCHAT_CONFIG;
+      const callAppSettings = {
+        appId: APP_ID,
+        region: REGION,
+      };
+      const res = await CometChatCalls.init(callAppSettings);
+      isCallsInitialized = true;
+      console.log("[RescueRoom] CometChatCalls SDK initialized:", res);
+      return CometChatCalls;
+    } catch (err) {
+      console.warn("[RescueRoom] CometChatCalls initialization notice:", err);
+      return null;
+    }
+  })();
+
+  return callsInitPromise;
+}
+
 export { CometChat };
