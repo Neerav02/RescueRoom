@@ -48,12 +48,28 @@ A physical pinned paper tag command board organized into three distinct severity
 - Industrial photographic print styling: heavy border, serial markings (`PLATE 01`, `PLATE 02`), timestamp, and operator signature.
 - Interactive full-screen high-resolution inspection lightbox modal.
 
+### 📊 Equipment Telemetry HUD & Interactive Vector Schematics
+- **Interactive CAD Vector Blueprints**: Dynamic SVG schematics for Excavators, Bulldozers, Haul Trucks, Wheel Loaders, and Transport Fleets.
+- **Pulsing Fault Node Pinpoint**: Concentric animated radar ping (`PINPOINT 01 ACTIVE`) highlighting the specific failed subsystem (e.g. Main Boom Cylinder, Rexroth A8VO Tandem Pump, Air Brake Chamber).
+- **Click-to-Inspect Subsystems**: Click any node on the CAD schematic to inspect operating envelope, bore diameter, fluid flow, and nominal pressure thresholds.
+- **Dispatch Subsystem Inquiry**: Instantly broadcasts a structured technical inquiry directly into the CometChat channel.
+- **Simulated CAN-Bus J1939 Instrument Gauges**: Live animated analog/digital indicators for Hydraulic Pressure (PSI), Coolant/Slew Temp (°C), and Engine RPM with realistic sensor jitter and redline threshold alarms.
+
+### 🤖 AI Machinery Co-Pilot & Failure Analysis Engine
+- **Multimodal Visual Evidence Decoding**: Powered by **Google Gemini 2.5 Flash** with an offline **Tactical Engineering Heuristics Engine** fallback.
+- **Root-Cause Mechanics**: Automated structural failure diagnosis (pressure carcass rupture, cyclic shock loading, thermal degradation).
+- **OEM Parts Procurement Matrix**: Exact OEM part numbers (Caterpillar, Parker Hannifin, Bosch Rexroth, Bendix, Holset) with estimated unit costs and availability.
+- **OSHA Lockout/Tagout (LOTO) Sequence**: Interactive checkable 6-step isolation procedures (chocking tracks, relieving tank pressure, padlocking 24V isolators).
+- **Calibrated Fastener Torque Specs**: OEM factory torque ratings (Nm, ft-lb) and lubrication specifications.
+- **One-Click CometChat Broadcast**: Dispatches the entire AI forensic briefing directly into the incident stream so all personnel stand by with exact specs.
+
 ### 📄 Auto-Generated Printable Service Report (`/report/:guid`)
 - Reconstructs a complete physical workshop maintenance report (`FORM-RR-808`).
 - **4 Metric Tiles**: Time to First Responder, Total Downtime Duration, Evidence Plates Scribed, and Call Minutes Logged.
 - **Diagnostic Narrative**: Plain-language engineering diagnosis synthesized from telemetry.
 - **Chronological Incident Event Ledger**: Minute-by-minute audit trail (Dispatched $\to$ First Responder $\to$ Evidence Scribed $\to$ Radio/Video Call $\to$ Officially Resolved).
 - **Embedded Evidence Plate Gallery**: With click-to-inspect modal.
+- **CAD Schematic Diagnosis & OEM Parts Manifest**: Reconstructed engineering schematic and inventory replenishment table.
 - **Workshop Sign-off Block**: Lead technician signature line, supervisor stamp, and archive seal.
 - **Print & PDF Export**: `@media print` CSS formats the document cleanly for physical paper filing and PDF generation.
 
