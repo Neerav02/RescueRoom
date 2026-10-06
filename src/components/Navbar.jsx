@@ -113,6 +113,26 @@ export default function Navbar({ currentUser, onLogout, onSwitchUser }) {
           </span>
         </div>
 
+        {/* AI Co-Pilot Status Badge */}
+        <div
+          className="paper-card"
+          style={{
+            padding: '6px 10px',
+            backgroundColor: 'var(--color-paper-light)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.74rem',
+            fontWeight: 700,
+            border: 'var(--border-ink)',
+          }}
+          title="Google Gemini Machinery Failure Analysis Engine"
+        >
+          <span>🤖</span>
+          <span>RESCUE-AI ONLINE</span>
+        </div>
+
         {currentUser ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div

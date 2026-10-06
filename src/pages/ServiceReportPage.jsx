@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { CometChat, ensureUserLoggedIn } from '../lib/cometchat';
+import { TelemetryHUD } from '../components';
+import { MACHINERY_CATALOG } from '../lib/gemini';
 
 export default function ServiceReportPage({ currentUser }) {
   const { guid } = useParams();
@@ -537,12 +539,68 @@ export default function ServiceReportPage({ currentUser }) {
                         <div className="mono" style={{ fontSize: '0.65rem', marginTop: '6px', color: 'var(--color-ink-muted)', textAlign: 'center' }}>
                           TAP TO INSPECT FULL RESOLUTION
                         </div>
-                      </div>
-                    );
-                  })}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
+              )}
+
+            {/* Section 4: CAD Schematic Diagnosis & OEM Parts Replenishment */}
+            <div style={{ marginBottom: '36px' }}>
+              <h3 style={{ fontSize: '1.15rem', borderBottom: 'var(--border-ink)', paddingBottom: '6px', marginBottom: '16px' }}>
+                CAD SCHEMATIC DIAGNOSIS & REPLACEMENT PARTS MANIFEST
+              </h3>
+
+              <div style={{ marginBottom: '16px' }}>
+                <TelemetryHUD
+                  equipment={equipment}
+                  incidentMeta={metadata}
+                  isResolved={isResolved}
+                  initiallyExpanded={true}
+                />
               </div>
-            )}
+
+              {/* OEM Parts Procurement Matrix */}
+              {(() => {
+                const catalog = MACHINERY_CATALOG[equipment] || MACHINERY_CATALOG['Excavator EX-204'];
+                const subKey = Object.keys(catalog.subsystems)[0];
+                const subData = catalog.subsystems[subKey];
+                return (
+                  <div style={{ border: 'var(--border-ink)', backgroundColor: 'var(--color-paper-light)', padding: '14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                      <span className="mono" style={{ fontSize: '0.8rem', fontWeight: 800 }}>
+                        OEM PARTS PROCUREMENT DISPATCH · {subKey.toUpperCase()}
+                      </span>
+                      <span className="stamp stamp-teal" style={{ fontSize: '0.65rem' }}>
+                        INVENTORY VERIFIED
+                      </span>
+                    </div>
+
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', backgroundColor: '#FFF', border: '1px solid var(--color-ink)' }}>
+                      <thead>
+                        <tr style={{ backgroundColor: 'var(--color-paper-muted)', textAlign: 'left' }}>
+                          <th style={{ padding: '6px 10px', borderBottom: '1px solid var(--color-ink)' }}>PART NUMBER</th>
+                          <th style={{ padding: '6px 10px', borderBottom: '1px solid var(--color-ink)' }}>OEM SPECIFICATION</th>
+                          <th style={{ padding: '6px 10px', borderBottom: '1px solid var(--color-ink)' }}>UNIT COST</th>
+                          <th style={{ padding: '6px 10px', borderBottom: '1px solid var(--color-ink)' }}>LEAD TIME</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {subData.oemParts.map((p, idx) => (
+                          <tr key={idx} style={{ borderBottom: '1px solid #E5E7EB' }}>
+                            <td style={{ padding: '8px 10px', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{p.partNumber}</td>
+                            <td style={{ padding: '8px 10px' }}>{p.name}</td>
+                            <td style={{ padding: '8px 10px', fontFamily: 'var(--font-mono)' }}>{p.cost}</td>
+                            <td style={{ padding: '8px 10px', fontFamily: 'var(--font-mono)', color: 'var(--color-teal)', fontWeight: 700 }}>{p.leadTime}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
+            </div>
 
             {/* Workshop Sign-Off Block */}
             <div

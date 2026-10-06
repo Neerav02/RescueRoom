@@ -8,6 +8,7 @@ import {
   safeSendMessage,
   safeSendMediaMessage,
 } from '../lib/cometchat';
+import { TelemetryHUD, AiCopilotModal } from '../components';
 
 export default function RoomPage({ currentUser }) {
   const { guid } = useParams();
@@ -25,10 +26,44 @@ export default function RoomPage({ currentUser }) {
   const [uploadError, setUploadError] = useState(null);
   const [onlineUserMap, setOnlineUserMap] = useState({});
 
+  // AI Co-Pilot & Telemetry states
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [selectedPlateForAi, setSelectedPlateForAi] = useState(null);
+
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+
+  // Broadcast AI Forensics Report to CometChat incident channel
+  const handleBroadcastAiReport = async (textReport) => {
+    try {
+      const reportMsg = new CometChat.TextMessage(
+        guid,
+        textReport,
+        CometChat.RECEIVER_TYPE.GROUP
+      );
+      const sent = await safeSendMessage(reportMsg, currentUser);
+      setMessages((prev) => [...prev, sent]);
+    } catch (e) {
+      console.warn('[RescueRoom AI] Broadcast notice:', e);
+    }
+  };
+
+  // Dispatch Telemetry Subsystem Inquiry to CometChat
+  const handleDispatchTelemetryInquiry = async (inquiryText) => {
+    try {
+      const inqMsg = new CometChat.TextMessage(
+        guid,
+        inquiryText,
+        CometChat.RECEIVER_TYPE.GROUP
+      );
+      const sent = await safeSendMessage(inqMsg, currentUser);
+      setMessages((prev) => [...prev, sent]);
+    } catch (e) {
+      console.warn('[RescueRoom Telemetry] Inquiry dispatch notice:', e);
+    }
+  };
 
   // Load group details & previous messages
   useEffect(() => {
@@ -528,7 +563,32 @@ export default function RoomPage({ currentUser }) {
             </h1>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => {
+                const latestPlate = [...messages].reverse().find(
+                  (m) => m.getType && m.getType() === CometChat.MESSAGE_TYPE.IMAGE
+                );
+                setSelectedPlateForAi(latestPlate?.getData?.()?.url || null);
+                setAiModalOpen(true);
+              }}
+              className="paper-button"
+              style={{
+                fontSize: '0.78rem',
+                padding: '8px 14px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                backgroundColor: 'var(--color-hazard)',
+                color: 'var(--color-ink)',
+                fontWeight: 800,
+                fontFamily: 'var(--font-mono)',
+              }}
+            >
+              <span>🤖 RESCUE-AI CO-PILOT</span>
+            </button>
+
             <button
               onClick={() => navigate(currentUser?.role === 'operator' ? '/operator' : '/board')}
               className="btn btn-hazard"
@@ -555,6 +615,14 @@ export default function RoomPage({ currentUser }) {
             <span>⚠ CRITICAL WORK STOPPAGE · LIVE INCIDENT CHANNEL ACTIVE</span>
           </div>
         )}
+
+        {/* Telemetry HUD & Interactive Vector Schematics */}
+        <TelemetryHUD
+          equipment={metadata.equipment || group?.getName() || 'Excavator EX-204'}
+          incidentMeta={metadata}
+          isResolved={isResolved}
+          onDispatchInquiry={handleDispatchTelemetryInquiry}
+        />
 
         {/* Resolved Banner with Stamped Rubber Seal Animation (Prompt 7) */}
         {isResolved && (
@@ -1136,11 +1204,31 @@ export default function RoomPage({ currentUser }) {
                                   marginTop: '8px',
                                   paddingTop: '6px',
                                   borderTop: '1px dashed var(--color-ink-subtle)',
+                                  gap: '8px',
                                 }}
                               >
-                                <span className="mono" style={{ fontSize: '0.68rem', color: 'var(--color-ink-muted)' }}>
-                                  TAP TO INSPECT FULL-RES
-                                </span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedPlateForAi(msg.getData().url);
+                                    setAiModalOpen(true);
+                                  }}
+                                  className="paper-button"
+                                  style={{
+                                    backgroundColor: 'var(--color-hazard)',
+                                    color: 'var(--color-ink)',
+                                    fontSize: '0.68rem',
+                                    fontWeight: 800,
+                                    padding: '2px 8px',
+                                    fontFamily: 'var(--font-mono)',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                  }}
+                                >
+                                  🤖 AI DAMAGE SCAN
+                                </button>
                                 <span className="mono" style={{ fontSize: '0.68rem', fontWeight: 700 }}>
                                   🔍 INSPECT
                                 </span>
@@ -1420,22 +1508,43 @@ export default function RoomPage({ currentUser }) {
                   borderTop: '1px dashed var(--color-ink-subtle)',
                 }}
               >
-                <span className="mono" style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)' }}>
-                  DIAGNOSTIC EVIDENCE STORED ON COMETCHAT CLOUD
-                </span>
-                <a
-                  href={lightboxPlate.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="btn"
-                  style={{ fontSize: '0.72rem', padding: '4px 10px' }}
-                >
-                  OPEN ORIGINAL FILE ↗
-                </a>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedPlateForAi(lightboxPlate.url);
+                      setAiModalOpen(true);
+                    }}
+                    className="btn btn-hazard"
+                    style={{ fontSize: '0.72rem', padding: '4px 12px', fontWeight: 800 }}
+                  >
+                    🤖 RUN AI FORENSICS SCAN
+                  </button>
+                  <a
+                    href={lightboxPlate.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn"
+                    style={{ fontSize: '0.72rem', padding: '4px 10px' }}
+                  >
+                    OPEN ORIGINAL FILE ↗
+                  </a>
+                </div>
               </div>
             </div>
           </div>
         )}
+
+        {/* AI Machinery Co-Pilot Modal */}
+        <AiCopilotModal
+          isOpen={aiModalOpen}
+          onClose={() => setAiModalOpen(false)}
+          targetPlateUrl={selectedPlateForAi}
+          equipment={metadata.equipment || group?.getName() || 'Excavator EX-204'}
+          incidentMeta={metadata}
+          guid={guid}
+          onBroadcastToChat={handleBroadcastAiReport}
+        />
       </div>
     </div>
   );
