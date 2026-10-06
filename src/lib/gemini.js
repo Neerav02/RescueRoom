@@ -69,7 +69,7 @@ export const MACHINERY_CATALOG = {
         lotoSteps: [
           'Shut down diesel power plant and remove operator ignition key.',
           'Depressurize main pilot and load-sensing circuits.',
-          'Drain hydraulic oil cooler circuit into certified waste container.',
+          'Drain hydraulic oil cooler circuit into designated waste container.',
           'Lock and tag main circuit breaker station.'
         ]
       }
@@ -321,7 +321,7 @@ export async function analyzeEvidencePlate({
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
     const promptText = `
-You are RESCUE-AI, a Senior Industrial Equipment Master Mechanic & Forensics Engineer certified by Caterpillar, Komatsu, Parker Hannifin, and Cummins.
+You are RESCUE-AI, a Senior Industrial Equipment Master Mechanic & Forensics Diagnostics Engineer with deep specialization in Caterpillar, Komatsu, Parker Hannifin, and Cummins machinery.
 An urgent machinery breakdown occurred in the field:
 - Equipment: ${equipment}
 - Incident Description: ${incidentDescription || 'Machinery emergency reported by field operator'}

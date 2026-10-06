@@ -263,7 +263,7 @@ export default function ServiceReportPage({ currentUser }) {
 
               {/* Physical Ink Seal */}
               <div className="stamped-resolved-seal" style={{ alignSelf: 'flex-start' }}>
-                <span style={{ fontSize: '0.6rem', letterSpacing: '0.15em' }}>CERTIFIED RECORD</span>
+                <span style={{ fontSize: '0.6rem', letterSpacing: '0.15em' }}>VERIFIED RECORD</span>
                 <span style={{ fontSize: '1.2rem', letterSpacing: '0.12em', lineHeight: 1.15 }}>
                   {isResolved ? 'RESOLVED' : 'ACTIVE'}
                 </span>
@@ -306,7 +306,7 @@ export default function ServiceReportPage({ currentUser }) {
                   {operatorName} <span className="mono" style={{ fontSize: '0.8rem', color: 'var(--color-ink-muted)' }}>[{operatorCallsign}]</span>
                 </div>
 
-                <div className="mono" style={{ fontSize: '0.68rem', color: 'var(--color-ink-muted)', marginTop: '10px' }}>CERTIFYING TECHNICIAN / DISPATCH</div>
+                <div className="mono" style={{ fontSize: '0.68rem', color: 'var(--color-ink-muted)', marginTop: '10px' }}>AUTHORIZING TECHNICIAN / DISPATCH</div>
                 <div style={{ fontSize: '1rem', fontWeight: 700 }}>
                   {resolvedByName} <span className="mono" style={{ fontSize: '0.8rem', color: 'var(--color-ink-muted)' }}>[{resolvedBy}]</span>
                 </div>
@@ -396,7 +396,7 @@ export default function ServiceReportPage({ currentUser }) {
                 <br /><br />
                 <strong>Primary Fault Declaration:</strong> "{description}".
                 <br /><br />
-                The centralized RescueRoom triage board broadcasted the alert to {companyName} technicians. First response contact was established within <strong>{formatSecs(firstResponderSeconds)}</strong>. During the live field engagement, <strong>{evidencePlates.length} photographic evidence plates</strong> were uploaded for remote fault diagnostics. Mechanics and dispatch personnel conducted <strong>{formatSecs(callDurationSeconds || 192)}</strong> of encrypted two-way tactical voice/video consultations to isolate the mechanical failure. Corrective procedures were verified on-site, and the machinery was officially certified operational and closed by <strong>{resolvedByName} ({resolvedBy})</strong> at <strong>{formatUtcTime(resolvedAt || Date.now())} UTC</strong>.
+                The centralized RescueRoom triage board broadcasted the alert to {companyName} technicians. First response contact was established within <strong>{formatSecs(firstResponderSeconds)}</strong>. During the live field engagement, <strong>{evidencePlates.length} photographic evidence plates</strong> were uploaded for remote fault diagnostics. Mechanics and dispatch personnel conducted <strong>{formatSecs(callDurationSeconds || 192)}</strong> of encrypted two-way tactical voice/video consultations to isolate the mechanical failure. Corrective procedures were verified on-site, and the machinery was verified operational and closed by <strong>{resolvedByName} ({resolvedBy})</strong> at <strong>{formatUtcTime(resolvedAt || Date.now())} UTC</strong>.
               </div>
             </div>
 
@@ -482,7 +482,7 @@ export default function ServiceReportPage({ currentUser }) {
                         OFFICIAL INCIDENT RESOLUTION SIGN-OFF
                       </div>
                       <div className="mono" style={{ fontSize: '0.78rem', color: 'var(--color-ink)', marginTop: '2px' }}>
-                        Work order certified by {resolvedByName} ({resolvedBy}). Unit cleared for operational return.
+                        Work order approved and closed by {resolvedByName} ({resolvedBy}). Unit cleared for operational return.
                       </div>
                     </div>
                   </div>
@@ -635,11 +635,11 @@ export default function ServiceReportPage({ currentUser }) {
 
               <div>
                 <span className="mono" style={{ fontSize: '0.72rem', color: 'var(--color-ink-muted)' }}>
-                  ARCHIVE AUDIT CERTIFICATION
+                  ARCHIVE AUDIT VERIFICATION
                 </span>
                 <div style={{ marginTop: '8px' }}>
                   <span className="stamp stamp-resolved" style={{ fontSize: '0.75rem', padding: '6px 12px' }}>
-                    ✓ OFFICIALLY CERTIFIED & CLOSED
+                    ✓ VERIFIED & CLOSED
                   </span>
                 </div>
               </div>

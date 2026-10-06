@@ -2,7 +2,7 @@
   "name": "rescueroom",
   "private": true,
   "version": "1.0.0",
-  "description": "Live Field Equipment Emergency Dispatch & Diagnostics Platform built for Zero to Chat (Edition 1)",
+  "description": "Live Field Equipment Emergency Dispatch & Diagnostics Platform built for CometChat Zero to Chat (Edition 1)",
   "license": "MIT",
   "type": "module",
   "scripts": {

@@ -1,30 +1,12 @@
 # 🚨 RescueRoom — Live Field Equipment Emergency Dispatch & Diagnostics
 
-<div align="center">
-
-![Hackathon](https://img.shields.io/badge/HACKATHON-ZERO%20TO%20CHAT%20(EDITION%201)-E4421E?style=for-the-badge)
-![CometChat](https://img.shields.io/badge/COMETCHAT-JS%20SDK%20v4%20%2B%20CALLS%20v5-1C1B18?style=for-the-badge&logo=chat&logoColor=white)
-![AI Co-Pilot](https://img.shields.io/badge/AI-GEMINI%202.5%20FLASH%20%2B%20OFFLINE%20FALLBACK-1F6F68?style=for-the-badge)
-![React 19](https://img.shields.io/badge/REACT-19.2%20(VITE%208)-61DAFB?style=for-the-badge&logo=react&logoColor=black)
-![Styling](https://img.shields.io/badge/CSS-PURE%20VANILLA%20DESIGN%20TOKENS-F2B705?style=for-the-badge)
-![License](https://img.shields.io/badge/LICENSE-MIT-14201F?style=for-the-badge)
-
-<p align="center">
-  <strong>Emergency incident response, live telemetry HUDs, visual failure diagnostics, and real-time audio/video escalation for heavy equipment operations.</strong>
-</p>
-
-[⚡ 5-Minute Judge Walkthrough](#-5-minute-judge-evaluation-walkthrough) •
-[Demo Accounts](#-demo-accounts--credentials) •
-[System Architecture](#-system-architecture) •
-[Features](#-key-features) •
-[Local Setup](#-installation--local-setup) •
-[MCP Integration](#-cometchat-mcp-integration-audit)
-
-</div>
+RescueRoom is a rugged, field-grade emergency dispatch and remote diagnostics console built for heavy equipment breakdowns in remote and mission-critical operations.
+Powered by CometChat's headless JavaScript Chat SDK v4 and Calling SDK v5, it provides a 3-tier kinetic escalation ladder—progressing seamlessly from monospace ticker chat to two-way tactical voice radio and optical video streams with automated call duration audits.
+Integrated vector CAD telemetry schematics and a hybrid AI diagnostics engine (Gemini 2.5 Flash with an instant offline heuristics fallback) equip field operators, mechanics, and dispatchers to triage mechanical failures in real time.
 
 ---
 
-## ⚡ 5-Minute Judge Evaluation Walkthrough
+## ⚡ Step-by-Step Judge Evaluation Walkthrough
 
 Follow this quick sequence to test the entire lifecycle across Chat, Voice, Video, AI, and Telemetry:
 
@@ -61,9 +43,40 @@ Follow this quick sequence to test the entire lifecycle across Chat, Voice, Vide
 3. Click **✕ END CALL & RETURN TO CHAT** $\to$ notice the automated call duration log scribed to the chat ticker.
 
 ### 6. Resolve Incident & View Service Report
-1. In the top header, click **✓ RESOLVE INCIDENT** $\to$ animated rubber seal stamps the ticket closed in oxidised teal ink.
+1. In the top header, click **✓ RESOLVE INCIDENT** $\to$ animated resolution stamp closes the ticket in oxidised teal ink.
 2. Click **📄 VIEW SERVICE REPORT →** to inspect the printable `FORM-RR-808` maintenance sheet with KPI metrics, event ledger, and parts manifest.
 3. Click **🖨 PRINT / EXPORT PDF** to preview the clean `@media print` layout.
+
+---
+
+<div align="center">
+
+![Hackathon](https://img.shields.io/badge/HACKATHON-COMETCHAT%20ZERO%20TO%20CHAT%20(EDITION%201)-E4421E?style=for-the-badge)
+![CometChat](https://img.shields.io/badge/COMETCHAT-JS%20SDK%20v4%20%2B%20CALLS%20v5-1C1B18?style=for-the-badge&logo=chat&logoColor=white)
+![AI Co-Pilot](https://img.shields.io/badge/AI-GEMINI%202.5%20FLASH%20%2B%20OFFLINE%20FALLBACK-1F6F68?style=for-the-badge)
+![React 19](https://img.shields.io/badge/REACT-19.2%20(VITE%208)-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![Styling](https://img.shields.io/badge/CSS-PURE%20VANILLA%20DESIGN%20TOKENS-F2B705?style=for-the-badge)
+![License](https://img.shields.io/badge/LICENSE-MIT-14201F?style=for-the-badge)
+
+[Demo Accounts](#-demo-accounts--credentials) •
+[Data & Limitations](#-demo-data-and-limitations) •
+[System Architecture](#-system-architecture) •
+[Features](#-key-features) •
+[Local Setup](#-installation--local-setup) •
+[MCP Integration](#-cometchat-mcp-integration-audit)
+
+</div>
+
+---
+
+## ⚠️ Demo Data and Limitations
+
+To maintain full transparency for evaluation, please note the following operational scope of this hackathon build:
+
+* **Simulated Telemetry**: Equipment sensor data (hydraulic system PSI, oil temperature, engine RPM, CAN-bus activity) is simulated via real-time browser state to demonstrate dynamic gauge rendering and threshold warnings without requiring live physical machinery.
+* **AI Diagnostics & Fallback**: The AI visual damage scanner utilizes **Google Gemini 2.5 Flash** when a valid API key is configured in `.env` (`VITE_GEMINI_API_KEY`). If the key is omitted, exhausted, or network access is offline, the system automatically falls back to a deterministic **built-in offline rules engine** that maps machinery types and failure descriptions to diagnostic breakdowns.
+* **Illustrative Technical Data**: All OEM part numbers (Caterpillar, Parker, Cummins, Bosch), torque specifications, and Lockout/Tagout (LOTO) isolation procedures are illustrative sample data for demonstration purposes, not official manufacturer engineering guidance.
+* **Demo-Level Multi-Tenancy**: Tenant and company isolation (`Northwind Heavy Equipment` vs `Kestrel Logistics`) is implemented at the demo level via user ID / group GUID prefixing and client-side route guards. A production deployment would isolate fleets using backend server-minted CometChat auth tokens and server-side authorization policies.
 
 ---
 
@@ -79,9 +92,6 @@ RescueRoom includes 6 pre-configured operational personas across two separate fl
 | **Kestrel Logistics** | Dev Malhotra | Operator | `YARD-CHIEF` | `/operator` (Emergency Button) |
 | **Kestrel Logistics** | Sana Sheikh | Mechanic | `MOBILE-TECH` | `/board` (Triage Board) |
 | **Kestrel Logistics** | Imran Baig | Dispatcher | `KESTREL-BASE` | `/board` (Triage Board) |
-
-> [!NOTE]
-> **Multi-Tenant Separation Note**: Company isolation in this demo is enforced via unique ID prefixes (`northwind_*` vs `kestrel_*`) and client-side route shields (Protocol 403 screen). In a production architecture, tenant separation is enforced via backend server-minted CometChat auth tokens (see [Production Roadmap](#-production-roadmap)).
 
 ---
 
@@ -147,7 +157,7 @@ sequenceDiagram
     Client->>CometChat: sendMediaMessage(Evidence Plate)
     Mechanic->>Client: Clicks [🤖 AI DAMAGE SCAN]
     Client->>AI: analyzeEvidencePlate(image, equipment)
-    AI-->>Client: Returns failure diagnosis, demo OEM parts & LOTO steps
+    AI-->>Client: Returns failure diagnosis, sample OEM parts & LOTO steps
     Mechanic->>Client: Climbs Ladder: CHAT -> VOICE -> VIDEO
     Client->>CometChat: CometChatCalls.generateToken() connects WebRTC
     Mechanic->>Client: Ends call; system logs call duration to chat ledger
@@ -179,14 +189,14 @@ sequenceDiagram
 * **Simulated CAN-Bus Gauges**: Dynamic simulated dials for Hydraulic PSI (with 4,800+ PSI redline alarms), Temp (°C), and RPM.
 
 ### 4. 🤖 AI Machinery Co-Pilot & Forensics
-* **Hybrid AI Engine**: Multimodal analysis using **Google Gemini 2.5 Flash** when an API key is provided, with an automatic **Offline Heuristic Catalog Engine** fallback.
-* **Illustrative OEM Parts Matrix**: Demo replacement part references (Cat, Parker, Cummins, Bosch) with unit costs and copy buttons.
+* **Hybrid AI Engine**: Multimodal analysis using **Google Gemini 2.5 Flash** when an API key is provided, with an automatic **Offline Heuristic Rules Engine** fallback.
+* **Illustrative OEM Parts Matrix**: Sample replacement part references (Cat, Parker, Cummins, Bosch) with unit costs and copy buttons.
 * **Sample LOTO Checklist**: Checkable 6-step procedural template for equipment isolation.
-* **Sample Torque Specs**: Reference factory fastener torque ratings and lubrication specifications.
+* **Sample Torque Specs**: Reference fastener torque ratings and lubrication specifications.
 * **One-Click Dispatch**: Broadcasts structured forensic briefings straight into the CometChat room feed.
 
 ### 5. 📄 Printable Service Report (`/report/:guid`)
-* Reconstructs physical maintenance report (`FORM-RR-808`).
+* Reconstructs physical workshop maintenance report (`FORM-RR-808`).
 * Includes 4 KPI metric tiles, chronological event timeline ledger, CAD schematic snapshot, and parts manifest.
 * Formatted with `@media print` for paper printing and PDF generation.
 
@@ -211,7 +221,7 @@ RescueRoom avoids generic SaaS templates in favor of a rugged, practical aesthet
 | **React Router v7 (`^7.18.4`)** | Client-side routing and route guards |
 | **`@cometchat/chat-sdk-javascript` (`^4.2.0`)** | Headless CometChat JavaScript Chat SDK |
 | **`@cometchat/calls-sdk-javascript` (`^5.0.6`)** | CometChat Calling SDK (WebRTC voice & video) |
-| **Google Gemini 2.5 Flash** | Multimodal AI visual failure analysis |
+| **Google Gemini 2.5 Flash** | Multimodal AI visual failure analysis (optional) |
 | **Pure Vanilla CSS** | Custom design tokens and Field Manual styling |
 
 ---
@@ -238,7 +248,7 @@ RescueRoom/
 │   │   └── AiCopilotModal.jsx        # Gemini AI failure analysis modal
 │   ├── lib/
 │   │   ├── cometchat.js              # CometChat Chat & Calls SDK singleton & auto-membership
-│   │   ├── gemini.js                 # Gemini 2.5 Flash connector & offline heuristic engine
+│   │   ├── gemini.js                 # Gemini 2.5 Flash connector & offline rules engine
 │   │   └── seed.js                   # Multi-tenant sample incident seeder
 │   ├── pages/
 │   │   ├── LoginPage.jsx             # Persona selector (6 accounts across 2 fleets)
@@ -274,11 +284,11 @@ cp .env.example .env
 Populate `.env` with your credentials:
 ```env
 # CometChat Application Credentials (Required)
-VITE_COMETCHAT_APP_ID=your_cometchat_app_id
-VITE_COMETCHAT_REGION=your_cometchat_region
-VITE_COMETCHAT_AUTH_KEY=your_cometchat_auth_key
+VITE_COMETCHAT_APP_ID=your_app_id
+VITE_COMETCHAT_REGION=your_region
+VITE_COMETCHAT_AUTH_KEY=your_auth_key
 
-# Google Gemini API Key (Optional — offline heuristic fallback active if omitted)
+# Google Gemini API Key (Optional — built-in offline rules fallback works without key)
 VITE_GEMINI_API_KEY=your_gemini_api_key_optional
 ```
 
@@ -303,19 +313,22 @@ npm run preview
 
 ---
 
-## 🔍 CometChat MCP Integration Audit
+## 🔍 CometChat MCP & Skills Integration Audit
 
-During development, the **CometChat Model Context Protocol (MCP)** server was queried to follow official SDK v4/v5 patterns:
+During the development and architecture of RescueRoom, CometChat's official Model Context Protocol (MCP) server and agent skill bundle were integrated to implement the real-time communications architecture:
 
-* **`search_cometchat_docs`**:
-  * Queried `updateGroup` syntax and metadata capabilities for atomic ticket state.
-  * Queried `GroupListener` and `MessageListener` for real-time board updates.
-  * Queried `ConversationsRequestBuilder` and `getUnreadMessageCount` for unread pills.
-  * Queried `CometChatCalls.generateToken` and `init` for WebRTC calling setup.
-* **`fetch_cometchat_doc_page`**:
-  * Retrieved `/sdk/javascript/llms-javascript-v4` (SDK v4 navigation index).
-  * Retrieved `/sdk/javascript/all-real-time-listeners` (listener callback signatures).
-  * Retrieved `/sdk/javascript/retrieve-conversations` (conversation filtering).
+### 1. Verified Active Repo Assets
+* **Official CometChat Agent Dispatcher**: Installed in [`AGENTS.md`](AGENTS.md) via `@cometchat/skills`.
+* **Pinned Skill Bundles**: 25 markdown-driven task skills maintained in [`.cometchat/skills/`](.cometchat/skills/) targeting the React v7 UI Kit and headless JavaScript SDKs.
+* **Implemented SDK Patterns**:
+  * Headless chat initialization, authentication, and session handling (`CometChat.init`, `CometChat.login`, `CometChat.getLoggedinUser`).
+  * Group channel provisioning, channel auto-membership, and cloud metadata sync (`CometChat.createGroup`, `CometChat.updateGroup`, `CometChat.joinGroup`).
+  * Real-time listeners for live ticker messages and triage board status changes (`CometChat.addMessageListener`, `CometChat.addGroupListener`).
+  * Unread counters for conversation indicators (`CometChat.ConversationsRequestBuilder`).
+  * Headless WebRTC token generation and session management (`CometChatCalls.init`, `CometChatCalls.generateToken`, `CometChatCalls.startSession`).
+
+### 2. Historical MCP Query Claims (Unverified)
+* *(Note: Exact prior session query logs targeting specific document URL slugs such as `/sdk/javascript/llms-javascript-v4` or `/sdk/javascript/all-real-time-listeners` cannot be verified from the repository commit history alone; however, all corresponding API patterns are fully verified in `src/lib/cometchat.js`)*.
 
 ---
 
@@ -324,12 +337,12 @@ During development, the **CometChat Model Context Protocol (MCP)** server was qu
 * **Server-Minted Auth Tokens**: Move authentication from client-side Auth Key to a backend token-minting service to provide true production-grade multi-tenant security.
 * **Hardware CAN-Bus Ingestion**: Connect live OBD-II / J1939 telematics hardware via WebSockets to replace client-side simulated telemetry.
 * **Offline Mesh Buffering**: Cache incident messages in IndexedDB and synchronize via WebRTC DataChannels when connectivity drops in underground shafts.
-* **FLIR Thermal Image Support**: Ingest thermal sensor photos directly into the AI Co-Pilot to pinpoint overheating bearings and hydraulic line blockages.
+* **Thermal Sensor Photo Support**: Ingest thermal sensor photos directly into the AI Co-Pilot to pinpoint overheating bearings and hydraulic line blockages.
 
 ---
 
 ## 📄 License & Hackathon Declaration
 
-* **Hackathon**: **Zero to Chat (Edition 1)**
+* **Hackathon**: **CometChat Zero to Chat (Edition 1)**
 * **License**: [MIT License](LICENSE)
 * **Author**: Neerav ([@Neerav02](https://github.com/Neerav02))
