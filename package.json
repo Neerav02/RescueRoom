@@ -1,7 +1,9 @@
 {
   "name": "rescueroom",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "Live Field Equipment Emergency Dispatch & Diagnostics Platform built for Zero to Chat (Edition 1)",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",

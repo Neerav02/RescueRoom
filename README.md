@@ -1,276 +1,263 @@
-# 🚨 RescueRoom — Live Field Machinery Emergency Dispatch & Diagnostics Platform
+# 🚨 RescueRoom — Live Field Equipment Emergency Dispatch & Diagnostics
 
 <div align="center">
 
-![RescueRoom Field Manual Banner](https://img.shields.io/badge/AESTHETIC-FIELD%20MANUAL%20TACTICAL-1C1B18?style=for-the-badge&labelColor=EFE8D8&color=1C1B18)
-![CometChat SDK](https://img.shields.io/badge/COMETCHAT-JS%20SDK%20v4.2%20%2B%20CALLS%20v5.0-E4421E?style=for-the-badge&logo=chat&logoColor=white)
-![Google Gemini](https://img.shields.io/badge/AI%20COPILOT-GEMINI%202.5%20FLASH-1F6F68?style=for-the-badge&logo=google&logoColor=white)
+![Hackathon](https://img.shields.io/badge/HACKATHON-ZERO%20TO%20CHAT%20(EDITION%201)-E4421E?style=for-the-badge)
+![CometChat](https://img.shields.io/badge/COMETCHAT-JS%20SDK%20v4%20%2B%20CALLS%20v5-1C1B18?style=for-the-badge&logo=chat&logoColor=white)
+![AI Co-Pilot](https://img.shields.io/badge/AI-GEMINI%202.5%20FLASH%20%2B%20OFFLINE%20FALLBACK-1F6F68?style=for-the-badge)
 ![React 19](https://img.shields.io/badge/REACT-19.2%20(VITE%208)-61DAFB?style=for-the-badge&logo=react&logoColor=black)
-![Styling](https://img.shields.io/badge/CSS-PURE%20VANILLA%20DESIGN%20TOKENS-F2B705?style=for-the-badge&logo=css3&logoColor=black)
+![Styling](https://img.shields.io/badge/CSS-PURE%20VANILLA%20DESIGN%20TOKENS-F2B705?style=for-the-badge)
 ![License](https://img.shields.io/badge/LICENSE-MIT-14201F?style=for-the-badge)
 
 <p align="center">
-  <strong>Mission-critical incident command, live telemetry HUDs, visual failure forensics, and real-time audio/video escalation built for heavy earthmoving equipment and industrial fleet transport.</strong>
+  <strong>Emergency incident response, live telemetry HUDs, visual failure diagnostics, and real-time audio/video escalation for heavy equipment operations.</strong>
 </p>
 
-[Key Features](#-signature-platform-features) •
+[⚡ 5-Minute Judge Walkthrough](#-5-minute-judge-evaluation-walkthrough) •
+[Demo Accounts](#-demo-accounts--credentials) •
 [System Architecture](#-system-architecture) •
-[Data Flow](#-data-flow--incident-lifecycle) •
-[Interactive Telemetry HUD](#-equipment-telemetry-hud--vector-cad-schematics) •
-[AI Machinery Co-Pilot](#-ai-machinery-co-pilot--evidence-plate-decoder) •
-[Quickstart](#-installation--local-setup) •
-[Multi-Tenant Scenarios](#-multi-tenant-personnel--demo-credentials)
+[Features](#-key-features) •
+[Local Setup](#-installation--local-setup) •
+[MCP Integration](#-cometchat-mcp-integration-audit)
 
 </div>
 
 ---
 
-## 📖 1. Executive Summary & Aesthetic Philosophy
+## ⚡ 5-Minute Judge Evaluation Walkthrough
 
-### The Real-World Challenge
-In mining pits, quarry excavations, and container terminals, **every minute of machinery downtime costs upwards of $2,500/hour**. When a 45-ton excavator ruptures a main hydraulic boom line or a haul truck loses retarder pressure, operators and technicians face hostile environments:
-- **Direct Sunlight Glare**: High-contrast outdoor screens are unreadable with washed-out pastel UI.
-- **Mud, Grease & Dirty Gloves**: Tiny rounded buttons and hidden kebab menus cause accidental taps or failure to dispatch.
-- **Communication Breakdown**: Phone calls lack telemetry context; text messages fail to transmit high-pressure safety procedures and exact OEM part numbers.
+Follow this quick sequence to test the entire lifecycle across Chat, Voice, Video, AI, and Telemetry:
 
-### The "Field Manual" Solution
-**RescueRoom** intentionally rejects modern generic rounded-corner purple SaaS templates in favor of a hand-crafted **Field Manual Design System**:
-* **Tactile Paper & Ink Palette**: Authentic physical bone workshop paper (`#EFE8D8`), deep industrial ink lines (`#1C1B18`), sharp mechanical 90° corners, and zero-blur hard offset shadows (`3px 3px 0px #1C1B18`).
-* **High-Visibility Emergency Signals**: Vermilion alert triggers (`#E4421E`), hazard-stripe caution tape (`#F2B705`), oxidised teal verification stamps (`#1F6F68`), and tactical night-vision dark panels (`#14201F`).
-* **Engineering Typography**: Google Fonts **Bricolage Grotesque** (bold stencil manual headings) and **IBM Plex Mono** (military UTC timestamps, CAN-bus codes, and serial markings).
+### 1. Log In as Operator (Asha Patil)
+1. Open [`http://localhost:5173/login`](http://localhost:5173/login).
+2. Click **Asha Patil (Operator)** under **Northwind Heavy Equipment** $\to$ click **AUTHORIZE STATION**.
+3. You land on the Operator Emergency Station (`/operator`).
+
+### 2. Dispatch an Emergency Incident
+1. Click the large vermilion button: **"⚠ SOMETHING'S WRONG"**.
+2. Select equipment (`Excavator EX-204`), severity (`CRITICAL`), and describe the fault:  
+   *"Hydraulic line ruptured near boom cylinder. High-pressure leak, immediate shutdown."*
+3. Click **TRANSMIT EMERGENCY DISPATCH →**. You are immediately routed into the new Incident Room.
+
+### 3. Inspect Live Telemetry HUD & CAD Blueprint
+1. In the Incident Room, view the top **Telemetry HUD** showing live CAN-bus readouts (simulated PSI, Temp, RPM).
+2. Click **`▼ BLUEPRINT & GAUGES`** to open the CAD schematic.
+3. Notice the **pulsing red radar pinpoint** locking onto the failed **Main Boom Cylinder**. Click the node to inspect specs, then click **"DISPATCH INQUIRY TO CHAT"** to post an inquiry into the ticker.
+
+### 4. Switch to Mechanic (Ravi Kumar) & Run AI Diagnostics
+1. Click **SWITCH USER** in the navbar $\to$ select **Ravi Kumar (Mechanic)** $\to$ log in.
+2. On the **Triage Board (`/board`)**, locate the incident under **CRITICAL SEVERITY** with its live downtime timer ticking up.
+3. Click **OPEN DISPATCH ROOM →**.
+4. Attach any photo using **📸 CAMERA** or **📁 ATTACH** (or view the existing photo plate).
+5. Click **`[ 🤖 AI DAMAGE SCAN ]`** under the plate:
+   - **Tab 1 (Forensics & OEM Parts)**: View component diagnosis and illustrative OEM replacement parts (with **"COPY P/N"** buttons).
+   - **Tab 2 (LOTO Checklist)**: Check off steps in the sample safety isolation checklist.
+   - **Tab 3 (Torque Specs)**: View sample calibrated fastener torque specs.
+6. Click **"📡 TRANSMIT AI REPORT TO COMETCHAT"** to post the briefing into the live group chat.
+
+### 5. Escalate Up the Ladder (Voice & Video Calls)
+1. On the left rail, click **2. VOICE** $\to$ tactical voice radio activates with real-time audio oscilloscope visualizer and participant strip.
+2. Click **3. VIDEO** $\to$ optical video connects with crosshair HUD overlay and hardware mute toggles.
+3. Click **✕ END CALL & RETURN TO CHAT** $\to$ notice the automated call duration log scribed to the chat ticker.
+
+### 6. Resolve Incident & View Service Report
+1. In the top header, click **✓ RESOLVE INCIDENT** $\to$ animated rubber seal stamps the ticket closed in oxidised teal ink.
+2. Click **📄 VIEW SERVICE REPORT →** to inspect the printable `FORM-RR-808` maintenance sheet with KPI metrics, event ledger, and parts manifest.
+3. Click **🖨 PRINT / EXPORT PDF** to preview the clean `@media print` layout.
 
 ---
 
-## 🏗️ 2. System Architecture
+## 👥 Demo Accounts & Credentials
 
-RescueRoom is built on a resilient, multi-tiered architecture that pairs **CometChat's Headless JavaScript SDK and Calling WebRTC infrastructure** with **Google Gemini 2.5 Flash** failure diagnostics and a pure Vanilla CSS design system.
+RescueRoom includes 6 pre-configured operational personas across two separate fleets for one-click testing:
+
+| Company Fleet | Persona Name | Role | Callsign | Starting Route |
+| :--- | :--- | :--- | :--- | :--- |
+| **Northwind Heavy Equipment** | Asha Patil | Operator | `OP-LEAD` | `/operator` (Emergency Button) |
+| **Northwind Heavy Equipment** | Ravi Kumar | Mechanic | `TECH-NORTH-09` | `/board` (Triage Board) |
+| **Northwind Heavy Equipment** | Meera Sen | Dispatcher | `DISPATCH-01` | `/board` (Triage Board) |
+| **Kestrel Logistics** | Dev Malhotra | Operator | `YARD-CHIEF` | `/operator` (Emergency Button) |
+| **Kestrel Logistics** | Sana Sheikh | Mechanic | `MOBILE-TECH` | `/board` (Triage Board) |
+| **Kestrel Logistics** | Imran Baig | Dispatcher | `KESTREL-BASE` | `/board` (Triage Board) |
+
+> [!NOTE]
+> **Multi-Tenant Separation Note**: Company isolation in this demo is enforced via unique ID prefixes (`northwind_*` vs `kestrel_*`) and client-side route shields (Protocol 403 screen). In a production architecture, tenant separation is enforced via backend server-minted CometChat auth tokens (see [Production Roadmap](#-production-roadmap)).
+
+---
+
+## 🏗️ System Architecture
 
 ```mermaid
 graph TD
-    subgraph "CLIENT TIER (React 19 + Vite)"
-        OP["🚜 Operator Mobile Station<br/>(/operator)<br/>- ⚠ Push-Button Dispatch<br/>- Mobile Camera Capture<br/>- CAN-Bus Status"]
-        TECH["🔧 Mechanic Field Console<br/>(/board & /room/:guid)<br/>- Live Triage Tags<br/>- Telemetry Vector HUD<br/>- AI Co-Pilot Forensics"]
-        DISP["📡 Central Fleet Dispatch<br/>(/board & /report/:guid)<br/>- Live Downtime Clocks<br/>- Printable FORM-RR-808<br/>- Official Stamped Close"]
+    subgraph "CLIENT INTERFACE (React 19 + Pure Vanilla CSS)"
+        OP["🚜 Operator Station (/operator)<br/>Emergency Dispatch & Mobile Camera"]
+        MECH["🔧 Mechanic Console (/board & /room/:guid)<br/>Triage Board, Vector HUD & AI Co-Pilot"]
+        DISP["📡 Dispatch Center (/report/:guid)<br/>Printable Service Report FORM-RR-808"]
     end
 
-    subgraph "APPLICATION LOGIC TIER"
-        AUTH["🏢 Multi-Tenant Isolation Engine<br/>Tenant Scoping (Northwind vs Kestrel)<br/>Protocol 403 Cross-Tenant Shield"]
-        HUD["📊 Vector CAD & Telemetry Hub<br/>Simulated J1939 CAN-Bus (PSI, °C, RPM)<br/>Pulsing Fault Node Pinpoint Engine"]
-        AI["🤖 RESCUE-AI Co-Pilot Engine<br/>Multimodal Vision Forensics (Gemini 2.5 Flash)<br/>Tactical Machinery Heuristics Fallback<br/>OSHA LOTO Sequence & Torque DB"]
-        LADDER["🧗 Kinetic Escalation Ladder<br/>Rung 1: CHAT (Real-Time Ticker)<br/>Rung 2: VOICE (Oscilloscope WebRTC)<br/>Rung 3: VIDEO (Optical Stream HUD)"]
+    subgraph "CORE RESCUEROOM LOGIC"
+        TENANT["🏢 Tenant Guard<br/>northwind_* vs kestrel_* Scoping"]
+        HUD["📊 Vector CAD & CAN-Bus Hub<br/>Simulated J1939 Pressure/Temp Dynamics"]
+        AI["🤖 RESCUE-AI Forensics Engine<br/>Gemini 2.5 Flash + Offline Heuristics"]
+        LADDER["🧗 Kinetic Escalation Ladder<br/>Chat → Voice (Oscilloscope) → Video"]
     end
 
-    subgraph "CLOUD & DATA TIER"
-        CC_CHAT["💬 CometChat Headless SDK v4<br/>- Incident Group Provisioning<br/>- Atomic Cloud Metadata Storage<br/>- Evidence Plate Media Scribing<br/>- Real-Time Message & Presence Listeners"]
-        CC_CALL["📞 CometChat Calls SDK v5<br/>- Session Token Generation<br/>- Encrypted WebRTC Voice/Video<br/>- Automated Duration Audit Ledger"]
-        GEMINI["🧠 Google Gemini API<br/>- gemini-2.5-flash Multimodal Endpoint<br/>- Subsystem Component Detection<br/>- OEM Replacement Cross-Referencing"]
+    subgraph "COMETCHAT COMMUNICATIONS & AI CLOUD"
+        CHAT_SDK["💬 CometChat JS Chat SDK v4<br/>- Group Provisioning & Cloud Metadata<br/>- Real-Time Message & Presence Listeners<br/>- Conversations Unread Counters"]
+        CALL_SDK["📞 CometChat Calls SDK v5<br/>- WebRTC Token Generation<br/>- Group Voice & Video Sessions<br/>- Automated Duration Audit Trail"]
+        GEMINI_API["🧠 Google Gemini API (Optional)<br/>- Multimodal Image Failure Analysis<br/>- Offline Heuristic Engine Fallback"]
     end
 
-    OP --> AUTH
-    TECH --> AUTH
-    DISP --> AUTH
+    OP --> TENANT
+    MECH --> TENANT
+    DISP --> TENANT
 
-    AUTH --> HUD
-    AUTH --> AI
-    AUTH --> LADDER
+    TENANT --> HUD
+    TENANT --> AI
+    TENANT --> LADDER
 
-    LADDER --> CC_CHAT
-    LADDER --> CC_CALL
-    HUD --> CC_CHAT
-    AI --> GEMINI
-    AI --> CC_CHAT
+    LADDER --> CHAT_SDK
+    LADDER --> CALL_SDK
+    AI --> GEMINI_API
+    AI --> CHAT_SDK
+    HUD --> CHAT_SDK
 ```
 
 ---
 
-## 🔄 3. Data Flow & Incident Lifecycle Workflow
+## 🔄 Data Flow: Incident Lifecycle
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Operator as 🚜 Field Operator
-    participant App as 💻 RescueRoom Client
+    actor Operator as 🚜 Operator
+    participant Client as 💻 RescueRoom Client
     participant CometChat as ☁️ CometChat Cloud
-    participant AI as 🧠 Gemini 2.5 Flash
-    actor Mechanic as 🔧 Field Mechanic
-    actor Dispatcher as 📡 Fleet Dispatcher
+    participant AI as 🧠 AI Engine
+    actor Mechanic as 🔧 Mechanic
 
-    Operator->>App: Hits giant vermilion "⚠ SOMETHING'S WRONG"
-    App->>CometChat: CometChat.createGroup(guid, metadata)
-    Note over CometChat: Cloud metadata scribes equipment, severity, description & openedAt
-    CometChat-->>App: Group Created (INC-8821)
-    App->>CometChat: Safe broadcast of Initial Dispatch Report
-    CometChat->>Mechanic: Triage Board receives GroupListener event; pins tag live
-    Mechanic->>App: Clicks pinned card; enters Incident Room
-    App->>CometChat: ensureGroupJoined(guid) auto-membership sync
-    App->>App: Telemetry HUD renders CAD schematic & pulses failed subsystem (Boom Cylinder)
-    Operator->>App: Captures high-res photo via mobile camera
-    App->>CometChat: sendMediaMessage(Evidence Plate 01)
-    Mechanic->>App: Clicks [🤖 AI DAMAGE SCAN] on Evidence Plate
-    App->>AI: Transmits image payload + incident telemetry to Gemini 2.5 Flash
-    AI-->>App: Returns JSON forensics (Catastrophic burst, Parker P/N, LOTO checklist, 145 Nm torque)
-    Mechanic->>App: Clicks "📡 TRANSMIT AI REPORT TO COMETCHAT"
-    App->>CometChat: Broadcasts formatted forensics briefing to group ticker
-    Mechanic->>App: Climbs Escalation Ladder: CHAT -> VOICE
-    App->>CometChat: CometChatCalls.generateToken(guid)
-    Note over Mechanic,Operator: WebRTC live radio frequency connects with audio oscilloscope
-    Mechanic->>App: Concludes repair; clicks "✕ END CALL"
-    App->>CometChat: Scribes automated call duration log to ledger
-    Dispatcher->>App: Clicks "✓ RESOLVE INCIDENT"
-    App->>CometChat: updateGroup(metadata with status='resolved')
-    Note over App: Rubber stamp animation slams down in oxidised teal ink
-    Dispatcher->>App: Opens /report/:guid; prints official FORM-RR-808 PDF
+    Operator->>Client: Clicks "⚠ SOMETHING'S WRONG"
+    Client->>CometChat: createGroup() with incident metadata
+    CometChat-->>Client: Group created (INC-XXXX)
+    Client->>CometChat: safeSendMessage(Initial Dispatch Alert)
+    CometChat->>Mechanic: GroupListener pins card to Triage Board in real time
+    Mechanic->>Client: Enters room; ensureGroupJoined() joins channel
+    Client->>Client: Telemetry HUD renders CAD schematic & pulses fault node
+    Operator->>Client: Uploads photo evidence
+    Client->>CometChat: sendMediaMessage(Evidence Plate)
+    Mechanic->>Client: Clicks [🤖 AI DAMAGE SCAN]
+    Client->>AI: analyzeEvidencePlate(image, equipment)
+    AI-->>Client: Returns failure diagnosis, demo OEM parts & LOTO steps
+    Mechanic->>Client: Climbs Ladder: CHAT -> VOICE -> VIDEO
+    Client->>CometChat: CometChatCalls.generateToken() connects WebRTC
+    Mechanic->>Client: Ends call; system logs call duration to chat ledger
+    Mechanic->>Client: Clicks "✓ RESOLVE INCIDENT"
+    Client->>CometChat: updateGroup() metadata status='resolved'
+    Client->>Client: Opens /report/:guid; prints FORM-RR-808
 ```
 
 ---
 
-## ⚡ 4. Signature Platform Features
+## 🛠️ Key Features
 
-### 🧗 1. The Kinetic Escalation Ladder
-A physical 3-rung tactical ladder embedded into the left control rail of every incident room:
-* **Rung 1: CHAT**: Monospace printed ticker log with military timestamps (`[HH:MM:SS UTC]`), typing indicators, and user presence dots.
-* **Rung 2: VOICE**: Instant two-way group tactical radio call with live audio oscilloscope waveform visualizer, active speaker highlighting, and frequency tuning display (`47.8 MHz`).
-* **Rung 3: VIDEO**: Full tactical optical video stream with camera mirroring, optical crosshair HUD overlay, and hardware mic/camera mute toggles.
-* **Automated Audit Logging**: When a call is concluded, the exact duration is automatically calculated and scribed into the permanent chat record (e.g. `📞 TACTICAL VOICE CALL TERMINATED · DURATION: 04:12`).
+### 1. 🧗 The Escalation Ladder
+* **Rung 1 (CHAT)**: Monospace printed ticker log with military UTC timestamps, presence indicators, and typing status.
+* **Rung 2 (VOICE)**: Two-way radio conference with live audio oscilloscope visualizer and frequency tuning display (`47.8 MHz`).
+* **Rung 3 (VIDEO)**: Tactical optical stream with crosshair HUD overlay and hardware mute toggles.
+* **Call Duration Auditing**: Concluded calls automatically post exact duration records to the chat ticker.
 
-### 📋 2. The Triage Board (`/board`)
-An operational board organized into 3 physical paper tag severity columns:
-* **`CRITICAL SEVERITY`**: Immediate work stoppage (Vermilion header `#E4421E`).
-* **`SERIOUS SEVERITY`**: Reduced equipment capacity / safety risk (Hazard Yellow header `#F2B705`).
-* **`MINOR ADVISORY`**: Routine operational fault report (Paper Light header `#F7F3E9`).
-* **Tag Mechanics**:
-  * Pinned mechanical square pin-head (`.triage-pin-head`).
-  * **Live Counting Downtime Timers**: Monospace counter ticking second-by-second (`HH:MM:SS`) since the fault occurred.
-  * **Conversations API Unread Count Pills**: Real-time unread badges (`● 3 NEW` vs `✓ CAUGHT UP`).
-  * **Oldest-Waiting Highlight**: The longest unaddressed incident in each column receives an `8px` vermilion highlighted edge (`.triage-tag-oldest`) and a `★ LONGEST WAITING IN QUEUE` stamp.
-  * **Real-Time Group Listeners**: New incidents pin themselves live via CometChat event listeners without page refreshes.
+### 2. 📋 The Triage Board (`/board`)
+* **3 Severity Columns**: `CRITICAL` (Vermilion), `SERIOUS` (Hazard Yellow), `MINOR` (Paper Light).
+* **Live Monospace Timers**: Second-by-second counting downtime clock on every pinned card.
+* **Conversations API Unread Badges**: Real-time unread counts (`● X NEW` vs `✓ CAUGHT UP`).
+* **Oldest-Waiting Priority**: Longest-unaddressed ticket in each column receives an `8px` vermilion highlight and priority badge.
 
-### 📊 3. Equipment Telemetry HUD & Vector CAD Schematics
-An interactive instrument cluster and blueprint viewer:
-* **CAD Vector Blueprints**: High-precision vector technical schematics for Excavators, Bulldozers, Haul Trucks, Wheel Loaders, Freightliner, Telehandlers, and Forklifts.
-* **Pulsing Radar Fault Pinpoint**: Concentric animated radar rings (`PINPOINT 01 ACTIVE`) lock onto the exact failed component.
-* **Click-to-Inspect Nodes**: Click any subsystem to view operating pressure, bore size, fluid flow, and nominal limits.
-* **Direct Technical Inquiries**: Click *"DISPATCH INQUIRY TO CHAT"* on any component to inject a structured query straight into CometChat.
-* **Simulated CAN-Bus J1939 Instruments**: Live animated gauges for Hydraulic Pressure (PSI), Coolant/Slew Temp (°C), and Engine RPM with realistic micro-jitter dynamics and redline safety alarms.
+### 3. 📊 Equipment Telemetry HUD & CAD Schematics
+* **Vector CAD Schematics**: Interactive SVG blueprints for Excavators, Bulldozers, Haul Trucks, Freightliners, etc.
+* **Pulsing Fault Node**: Concentric animated radar ping (`PINPOINT 01 ACTIVE`) highlighting the failed subsystem.
+* **Subsystem Inspection & Query**: Click any node to view specs and dispatch technical queries directly into CometChat.
+* **Simulated CAN-Bus Gauges**: Dynamic simulated dials for Hydraulic PSI (with 4,800+ PSI redline alarms), Temp (°C), and RPM.
 
-### 🤖 4. AI Machinery Co-Pilot & Failure Analysis Engine
-A forensics engine powered by **Google Gemini 2.5 Flash** with an offline **Tactical Engineering Heuristics Engine** fallback:
-* **Multimodal Visual Evidence Decoding**: Analyzes uploaded photos to detect structural failure modes (high-pressure carcass rupture, cyclic shock loading, elastomer degradation).
-* **OEM Parts Procurement Matrix**: Exact OEM part numbers (Caterpillar, Komatsu, Parker Hannifin, Bosch Rexroth, Bendix, Holset) with estimated unit costs and warehouse lead times.
-* **OSHA Lockout/Tagout (LOTO) Sequence**: Interactive checkable 6-step isolation checklist (relieving tank pressure, lowering implements, padlocking 24V battery isolators).
-* **Calibrated Fastener Torque Specs**: OEM factory torque ratings (Nm, ft-lb) and lubrication requirements.
-* **One-Click CometChat Broadcast**: Dispatches the entire AI forensic briefing directly into the incident stream so all personnel stand by with exact specs.
+### 4. 🤖 AI Machinery Co-Pilot & Forensics
+* **Hybrid AI Engine**: Multimodal analysis using **Google Gemini 2.5 Flash** when an API key is provided, with an automatic **Offline Heuristic Catalog Engine** fallback.
+* **Illustrative OEM Parts Matrix**: Demo replacement part references (Cat, Parker, Cummins, Bosch) with unit costs and copy buttons.
+* **Sample LOTO Checklist**: Checkable 6-step procedural template for equipment isolation.
+* **Sample Torque Specs**: Reference factory fastener torque ratings and lubrication specifications.
+* **One-Click Dispatch**: Broadcasts structured forensic briefings straight into the CometChat room feed.
 
-### 📸 5. Numbered Evidence Plates
-* Native mobile camera capture (`capture="environment"`) and desktop file picker.
-* Strict 5MB file validation and photographic MIME enforcement.
-* Photographic print styling: heavy ink border, sequential serial markings (`PLATE 01`, `PLATE 02`), timestamp, and operator signature.
-* Full-screen inspection lightbox modal with direct `[ 🤖 RUN AI FORENSICS SCAN ]` launch button.
-
-### 📄 6. Auto-Generated Printable Service Report (`/report/:guid`)
-* Reconstructs an official physical workshop maintenance report (`FORM-RR-808`).
-* **4 Metric Tiles**: Time to First Responder, Total Downtime Duration, Evidence Plates Scribed, and Call Minutes Logged.
-* **Diagnostic Narrative**: Plain-language engineering diagnosis synthesized from telemetry.
-* **Chronological Incident Event Ledger**: Minute-by-minute audit trail (Dispatched $\to$ First Responder $\to$ Evidence Scribed $\to$ Radio/Video Call $\to$ Officially Resolved).
-* **Embedded Evidence Plate Gallery**: High-resolution thumbnails with full inspection modals.
-* **CAD Schematic Diagnosis & OEM Parts Manifest**: Reconstructed engineering blueprint snapshot and verified parts order table.
-* **Workshop Sign-off Block**: Lead technician signature line, supervisor stamp, and certified archive seal.
-* **Physical Print & PDF Export**: High-contrast `@media print` CSS formats the document cleanly for physical paper filing and PDF generation.
-
-### 🛡️ 7. Strict Multi-Tenant Isolation & 403 Lockdown Shields
-Complete data segregation between independent corporate workspaces:
-1. **Northwind Heavy Equipment** (Mining & Excavation Fleet)
-2. **Kestrel Logistics** (Warehouse & Transport Fleet)
-* **Scoping Architecture**: All user UIDs (`northwind_ravi` vs `kestrel_dev`) and group GUIDs (`northwind_inc_*` vs `kestrel_inc_*`) are strictly prefixed.
-* **Protocol 403 Lockdown Shields**: If a user attempts to enter a foreign company incident room or inspect an external service report, an automated **Security Lockdown Card** halts navigation and preserves corporate confidentiality.
+### 5. 📄 Printable Service Report (`/report/:guid`)
+* Reconstructs physical maintenance report (`FORM-RR-808`).
+* Includes 4 KPI metric tiles, chronological event timeline ledger, CAD schematic snapshot, and parts manifest.
+* Formatted with `@media print` for paper printing and PDF generation.
 
 ---
 
-## 💻 5. Tech Stack & Engineering Decisions
+## 🎨 Design Philosophy: "Field Manual"
 
-| Layer | Technology | Rationale & Implementation Details |
-| :--- | :--- | :--- |
-| **Framework** | **React 19 (`^19.2.8`)** | High-performance component tree, concurrent rendering, and native hook-driven lifecycle. |
-| **Bundler** | **Vite 8 (`^8.3.0`)** | Lightning-fast HMR, optimized production tree-shaking, and sub-second build times. |
-| **Routing** | **React Router v7 (`^7.18.4`)** | Declarative route architecture with dynamic parameter routing (`/room/:guid`, `/report/:guid`). |
-| **Chat & Messaging** | **CometChat Headless JS SDK v4 (`^4.2.0`)** | Direct API usage on top of `@cometchat/chat-sdk-javascript` without restrictive pre-baked UI shells. |
-| **Voice & Video** | **CometChat Calls JS SDK v5 (`^5.0.6`)** | WebRTC encrypted audio/video calling, token generation, and hardware session management. |
-| **AI Forensics** | **Google Gemini 2.5 Flash** | Multimodal visual failure analysis, structured JSON generation, and OEM parts extraction. |
-| **Styling** | **Pure Vanilla CSS (Zero Tailwind)** | Hand-crafted CSS tokens (`design-tokens.css` & `field-manual.css`) providing 100% control over the Field Manual aesthetic. |
-| **Typography** | **Google Fonts (Bricolage + Plex Mono)** | Industrial typography pairing for rugged readability in harsh physical environments. |
-
-### Architectural Decision: CometChat Cloud Metadata Storage
-Rather than maintaining an external relational database (PostgreSQL/MongoDB) that could fall out of sync with chat rooms, RescueRoom leverages **CometChat Group Metadata** as its primary system of record:
-1. **Atomic State Coupling**: `{ status, severity, equipment, openedAt, resolvedAt, resolvedBy }` live directly inside the CometChat group object.
-2. **Zero Synchronization Drift**: Transcripts, evidence plates, call records, and resolution timestamps remain completely unified.
-3. **Multi-Client Real-Time Distribution**: Any technician or dispatcher fetching the group (`CometChat.getGroup`) or querying channels (`CometChat.GroupsRequestBuilder`) receives the latest state immediately.
+RescueRoom avoids generic SaaS templates in favor of a rugged, practical aesthetic:
+* **Palette**: Bone paper (`#EFE8D8`), deep ink (`#1C1B18`), vermilion emergency (`#E4421E`), safety amber (`#F2B705`), oxidised teal (`#1F6F68`), and tactical dark panel (`#14201F`).
+* **Borders & Shadows**: 90° square mechanical corners, thick ink outlines (`2px`/`3px`), and zero-blur hard offset shadows (`3px 3px 0px #1C1B18`).
+* **Typography**: **Bricolage Grotesque** (stencil manual headers) paired with **IBM Plex Mono** (military timestamps, serials, and codes).
+* **100% Pure Vanilla CSS**: Zero Tailwind, zero external UI libraries—every token is custom-crafted in `src/styles/design-tokens.css` and `field-manual.css`.
 
 ---
 
-## 📁 6. Folder & File Structure
+## 💻 Tech Stack
+
+| Technology | Role |
+| :--- | :--- |
+| **React 19 (`^19.2.8`)** | Frontend framework (concurrent rendering & hooks) |
+| **Vite 8 (`^8.3.0`)** | Build tool and fast development server |
+| **React Router v7 (`^7.18.4`)** | Client-side routing and route guards |
+| **`@cometchat/chat-sdk-javascript` (`^4.2.0`)** | Headless CometChat JavaScript Chat SDK |
+| **`@cometchat/calls-sdk-javascript` (`^5.0.6`)** | CometChat Calling SDK (WebRTC voice & video) |
+| **Google Gemini 2.5 Flash** | Multimodal AI visual failure analysis |
+| **Pure Vanilla CSS** | Custom design tokens and Field Manual styling |
+
+---
+
+## 📁 Repository Structure
 
 ```text
 RescueRoom/
-├── .env                              # CometChat & Google Gemini credentials
-├── index.html                        # Application entry with Google Fonts preconnect
-├── package.json                      # Project dependencies & scripts
-├── vite.config.js                    # Vite build configuration
-├── README.md                         # Comprehensive project documentation
+├── .env.example                      # Environment template (placeholders only)
+├── .gitignore                        # Git ignore (.env is excluded)
+├── index.html                        # Application entry point & Google Fonts
+├── package.json                      # Dependencies & scripts
+├── vite.config.js                    # Vite configuration
+├── LICENSE                           # MIT License
+├── README.md                         # Project documentation
 ├── src/
-│   ├── main.jsx                      # React 19 root bootstrap
-│   ├── App.jsx                       # Routing matrix, session restoration & auth sync
-│   ├── App.css                       # Root application styling
-│   ├── index.css                     # Global base styles
+│   ├── main.jsx                      # React 19 bootstrap
+│   ├── App.jsx                       # Routing matrix & session sync
+│   ├── App.css                       # Application layout styling
 │   ├── components/
-│   │   ├── index.js                  # Centralized component export hub
-│   │   ├── Navbar.jsx                # Sticky military header, clock, workspace badge & AI status
-│   │   ├── TelemetryHUD.jsx          # Interactive vector CAD schematics & CAN-bus gauges
-│   │   └── AiCopilotModal.jsx        # Multimodal Gemini failure analysis, LOTO & torque modal
+│   │   ├── index.js                  # Centralized component exports
+│   │   ├── Navbar.jsx                # Header, system clock, tenant badge & AI status
+│   │   ├── TelemetryHUD.jsx          # Vector CAD schematics & CAN-bus gauges
+│   │   └── AiCopilotModal.jsx        # Gemini AI failure analysis modal
 │   ├── lib/
-│   │   ├── cometchat.js              # CometChat Chat & Calls SDK singleton, re-auth & safe dispatch
-│   │   ├── gemini.js                 # Gemini 2.5 Flash API connector & Tactical Engineering Heuristics
-│   │   └── seed.js                   # Multi-tenant operational scenario seeder (4 realistic incidents)
+│   │   ├── cometchat.js              # CometChat Chat & Calls SDK singleton & auto-membership
+│   │   ├── gemini.js                 # Gemini 2.5 Flash connector & offline heuristic engine
+│   │   └── seed.js                   # Multi-tenant sample incident seeder
 │   ├── pages/
-│   │   ├── LoginPage.jsx             # Multi-tenant operational roster selector (6 personnel)
-│   │   ├── OperatorPage.jsx          # "⚠ SOMETHING'S WRONG" push-button emergency dispatch station
-│   │   ├── TriageBoardPage.jsx       # Pinned paper tag command board with live aging timers & unread pills
-│   │   ├── RoomPage.jsx              # Kinetic Escalation Ladder, live ticker feed, evidence plates & calls
-│   │   └── ServiceReportPage.jsx     # Official printable maintenance service report (FORM-RR-808)
+│   │   ├── LoginPage.jsx             # Persona selector (6 accounts across 2 fleets)
+│   │   ├── OperatorPage.jsx          # "SOMETHING'S WRONG" push-button emergency station
+│   │   ├── TriageBoardPage.jsx       # Pinned paper tag board with live aging timers
+│   │   ├── RoomPage.jsx              # Escalation ladder, ticker chat, evidence plates & calls
+│   │   └── ServiceReportPage.jsx     # Printable service report FORM-RR-808
 │   └── styles/
-│       ├── design-tokens.css         # Core 6-color palette, typography, hard shadows & borders
-│       └── field-manual.css          # Physical stamps, rubber seals, hazard tape & print rules
+│       ├── design-tokens.css         # CSS custom properties & color tokens
+│       └── field-manual.css          # Field Manual components, stamps & print layout
 ```
 
 ---
 
-## 👥 7. Multi-Tenant Personnel & Demo Credentials
-
-RescueRoom features 6 operational demo personas pre-configured for instant one-click login across two independent corporate fleets:
-
-| Workspace | Name | Role | Callsign | Access Route | Responsibilities |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Northwind Heavy Equipment** | Asha Patil | Operator | `OP-LEAD` | `/operator` | Heavy excavator operations; pushes emergency dispatch |
-| **Northwind Heavy Equipment** | Ravi Kumar | Mechanic | `TECH-NORTH-09` | `/board` | Hydraulics & diesel lead; climbs ladder & repairs faults |
-| **Northwind Heavy Equipment** | Meera Sen | Dispatcher | `DISPATCH-01` | `/board` | Central yard supervisor; resolves incidents & certifies reports |
-| **Kestrel Logistics** | Dev Malhotra | Operator | `YARD-CHIEF` | `/operator` | Freightliner fleet driver; dispatches transport emergencies |
-| **Kestrel Logistics** | Sana Sheikh | Mechanic | `MOBILE-TECH` | `/board` | Powertrain & electrical tech; inspects air brake chambers |
-| **Kestrel Logistics** | Imran Baig | Dispatcher | `KESTREL-BASE` | `/board` | Regional logistics controller; archives work orders |
-
-### Pre-Seeded Incident Scenarios
-Upon opening the Triage Board for either company, the built-in seeder (`src/lib/seed.js`) provisions authentic operational incident tickets:
-* **INC-8821 (CRITICAL)**: Hydraulic main boom line rupture on Excavator EX-204 / Freightliner FL-90.
-* **INC-7412 (SERIOUS)**: Track tension cylinder pressure drop under heavy blade load on Bulldozer BD-801.
-* **INC-6109 (MINOR)**: Auxiliary alternator warning light flickering during cycle dump on Haul Truck HT-310.
-* **INC-5204 (RESOLVED)**: Bucket hydraulic cylinder seal replacement verified and archived.
-
----
-
-## 🚀 8. Installation & Local Setup
+## 🚀 Installation & Local Setup
 
 ### Prerequisites
-* **Node.js**: v18.0.0 or higher (tested on Node v20 / v22)
+* **Node.js**: v18.0.0 or higher (tested on Node v20/v22)
 * **npm**: v9.0.0 or higher
-* Modern web browser (Chrome, Edge, Firefox, Brave, Safari) with WebRTC support.
 
 ### 1. Clone the Repository
 ```bash
@@ -279,32 +266,36 @@ cd RescueRoom
 ```
 
 ### 2. Configure Environment Variables
-Create a `.env` file in the root directory:
+Create a local `.env` file from `.env.example`:
+```bash
+cp .env.example .env
+```
+
+Populate `.env` with your credentials:
 ```env
 # CometChat Application Credentials (Required)
-VITE_COMETCHAT_APP_ID=16843505914f60cbb
-VITE_COMETCHAT_REGION=in
-VITE_COMETCHAT_AUTH_KEY=cc35ff3816d06739765c7994842d0971fff65d80
+VITE_COMETCHAT_APP_ID=your_cometchat_app_id
+VITE_COMETCHAT_REGION=your_cometchat_region
+VITE_COMETCHAT_AUTH_KEY=your_cometchat_auth_key
 
-# Google Gemini API Key (Optional - Fallback Heuristic Engine active by default)
-VITE_GEMINI_API_KEY=
+# Google Gemini API Key (Optional — offline heuristic fallback active if omitted)
+VITE_GEMINI_API_KEY=your_gemini_api_key_optional
 ```
 
-> [!NOTE]
-> If `VITE_GEMINI_API_KEY` is left blank, RescueRoom's built-in **Tactical Machinery Engineering Engine** automatically handles all failure forensics, OEM part lookups, and LOTO steps offline with zero setup friction! Technicians can also enter their Gemini key dynamically inside the in-app AI settings tab.
+> [!IMPORTANT]
+> **API Key Security**: Never commit your `.env` file to version control. The repository's `.gitignore` explicitly excludes `.env`.
 
-### 3. Install Dependencies
+### 3. Install & Start
 ```bash
+# Install dependencies
 npm install
-```
 
-### 4. Start Development Server
-```bash
+# Start development server
 npm run dev
 ```
-Open your browser and navigate to **`http://localhost:5173`**.
+Open **`http://localhost:5173`** in your browser.
 
-### 5. Build for Production
+### 4. Build for Production
 ```bash
 npm run build
 npm run preview
@@ -312,94 +303,33 @@ npm run preview
 
 ---
 
-## 🧪 9. Step-by-Step Judge Evaluation Walkthrough
+## 🔍 CometChat MCP Integration Audit
 
-Follow this 5-minute evaluation script to test the complete end-to-end incident lifecycle:
+During development, the **CometChat Model Context Protocol (MCP)** server was queried to follow official SDK v4/v5 patterns:
 
-1. **Log In as Operator**:
-   - Navigate to `http://localhost:5173/login`.
-   - Select **Asha Patil (Operator)** under Northwind Heavy Equipment and click **AUTHORIZE STATION**.
-   - You arrive at the Operator Station (`/operator`).
-2. **Trigger an Emergency**:
-   - Click the giant vermilion **"⚠ SOMETHING'S WRONG"** button.
-   - Equipment defaults to `Excavator EX-204` with `CRITICAL` severity.
-   - Enter description: *"Main boom high pressure line burst. Oil loss and complete implement stoppage."*
-   - Click **TRANSMIT EMERGENCY DISPATCH →**. You are immediately routed into the new Incident Room (`/room/northwind_inc_XXXX`).
-3. **Inspect the Telemetry CAD Schematic**:
-   - Observe the live CAN-bus telemetry bar at the top (fluctuating at `5,120 PSI` and `108°C`).
-   - Click **`▼ BLUEPRINT & GAUGES`** to expand the vector CAD blueprint.
-   - Notice the **pulsing red radar ping** locking directly onto the **Main Boom Cylinder**.
-   - Click the node to inspect cylinder bore and pressure envelopes, then click **"DISPATCH INQUIRY TO CHAT"**.
-4. **Switch Persona to Mechanic (Ravi Kumar)**:
-   - Click **SWITCH USER** in the top navbar and log in as **Ravi Kumar (Mechanic)**.
-   - On the **Triage Board (`/board`)**, locate Asha's newly dispatched ticket under the `CRITICAL SEVERITY` column with its live timer counting downtime second-by-second.
-   - Click **OPEN DISPATCH ROOM →**.
-5. **Run AI Failure Forensics on Evidence Plate**:
-   - Upload a machinery photo using **📸 CAMERA** or desktop file attach (or click on an existing plate).
-   - Click the yellow **`[ 🤖 AI DAMAGE SCAN ]`** button directly beneath the plate.
-   - Review Tab 1: Component identification, root-cause failure mechanics, and OEM replacement parts table (e.g. Cat P/N `154-8291`). Click **"COPY P/N"**.
-   - Review Tab 2: Check off steps in the **OSHA LOTO Safety Isolation Sequence**.
-   - Review Tab 3: Inspect calibrated fastener torque ratings (`145 Nm`).
-   - Click **"📡 TRANSMIT AI REPORT TO COMETCHAT"** and watch the complete forensic report scribed to the message ticker in real time!
-6. **Climb the Escalation Ladder**:
-   - In the left rail, click **2. VOICE** to escalate to voice radio mode.
-   - Observe the dark tactical panel, audio oscilloscope waveform, and live call timer.
-   - Click **3. VIDEO** to engage optical stream with crosshair HUD overlay.
-   - Click **✕ END CALL & RETURN TO CHAT**. Notice the automated call duration audit log (`📞 TACTICAL VOICE CALL TERMINATED · DURATION: 00:24`) scribed to the message ticker.
-7. **Resolve Incident & Export Service Report**:
-   - In the top header, click **✓ RESOLVE INCIDENT**.
-   - Watch the physical rubber seal slam down in oxidised teal ink (`INCIDENT WORK ORDER COMPLETED & CLOSED`).
-   - Click **📄 VIEW SERVICE REPORT →**.
-   - Inspect the reconstructed `FORM-RR-808`, including the 4 KPI metric tiles, the CAD blueprint snapshot, and the verified OEM parts procurement order.
-   - Click **🖨 PRINT / EXPORT PDF SERVICE REPORT** to see the clean, high-contrast `@media print` layout.
+* **`search_cometchat_docs`**:
+  * Queried `updateGroup` syntax and metadata capabilities for atomic ticket state.
+  * Queried `GroupListener` and `MessageListener` for real-time board updates.
+  * Queried `ConversationsRequestBuilder` and `getUnreadMessageCount` for unread pills.
+  * Queried `CometChatCalls.generateToken` and `init` for WebRTC calling setup.
+* **`fetch_cometchat_doc_page`**:
+  * Retrieved `/sdk/javascript/llms-javascript-v4` (SDK v4 navigation index).
+  * Retrieved `/sdk/javascript/all-real-time-listeners` (listener callback signatures).
+  * Retrieved `/sdk/javascript/retrieve-conversations` (conversation filtering).
 
 ---
 
-## 🛠️ 10. CometChat MCP Tools Integration Audit Log
+## 🗺️ Production Roadmap
 
-Throughout the architectural development of RescueRoom, the **CometChat Model Context Protocol (MCP)** server was queried live to ground every implementation detail in official, verified documentation:
-
-```text
-[MCP AUDIT TRAIL]
-1. Tool: search_cometchat_docs
-   - Query: "updateGroup JavaScript SDK"
-   - Output: Confirmed group metadata structure, permissions, and group update lifecycle.
-2. Tool: fetch_cometchat_doc_page
-   - Target: "/sdk/javascript/llms-javascript-v4"
-   - Output: Verified SDK v4 root architecture, AppSettingsBuilder, and presence subscriptions.
-3. Tool: search_cometchat_docs
-   - Query: "addGroupListener GroupListener JavaScript SDK"
-   - Output: Retrieved real-time group event callbacks for live Triage Board pinning.
-4. Tool: search_cometchat_docs
-   - Query: "getUnreadMessageCount JavaScript SDK"
-   - Output: Retrieved ConversationsRequestBuilder methods to power real-time unread pills.
-5. Tool: fetch_cometchat_doc_page
-   - Target: "/sdk/javascript/all-real-time-listeners"
-   - Output: Implemented MessageListener, UserListener, and OngoingCallListener callbacks.
-6. Tool: search_cometchat_docs
-   - Query: "CometChatCalls generateToken init JavaScript SDK"
-   - Output: Verified CometChatCalls v5 WebRTC token generation and session management.
-```
+* **Server-Minted Auth Tokens**: Move authentication from client-side Auth Key to a backend token-minting service to provide true production-grade multi-tenant security.
+* **Hardware CAN-Bus Ingestion**: Connect live OBD-II / J1939 telematics hardware via WebSockets to replace client-side simulated telemetry.
+* **Offline Mesh Buffering**: Cache incident messages in IndexedDB and synchronize via WebRTC DataChannels when connectivity drops in underground shafts.
+* **FLIR Thermal Image Support**: Ingest thermal sensor photos directly into the AI Co-Pilot to pinpoint overheating bearings and hydraulic line blockages.
 
 ---
 
-## 🗺️ 11. Future Roadmap & Enhancements
+## 📄 License & Hackathon Declaration
 
-- [ ] **Offline P2P Mesh Radio Synchronization**: Local peer-to-peer message buffering via WebRTC DataChannels for subterranean mine tunnels without cellular backhaul.
-- [ ] **Thermal FLIR Camera Pipeline**: Integration with mobile FLIR One thermal imaging cameras to auto-detect hydraulic overheating zones and turbo manifold cracks.
-- [ ] **Augmented Reality (AR) Overlay**: WebXR camera view projecting exploded 3D CAD models over the physical machine engine bay.
-- [ ] **Automated ERP Parts Procurement**: Direct webhooks into SAP / Oracle NetSuite to automatically order verified OEM replacement parts upon incident resolution.
-
----
-
-## 📄 12. License & Hackathon Declaration
-
-* **Submission**: CometChat Global AI & Communication Hackathon 2026
-* **Developer**: Neerav ([@Neerav02](https://github.com/Neerav02))
-* **License**: MIT License — open for industrial research, heavy machinery field testing, and fleet operations.
-
----
-
-<div align="center">
-  <sub>RescueRoom · Field Manual Emergency Dispatch Infrastructure · Certified Industrial Communications 2026</sub>
-</div>
+* **Hackathon**: **Zero to Chat (Edition 1)**
+* **License**: [MIT License](LICENSE)
+* **Author**: Neerav ([@Neerav02](https://github.com/Neerav02))
