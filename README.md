@@ -1,10 +1,14 @@
 # 🚨 RescueRoom — Industrial Emergency Dispatch & Remote Telematics Diagnostics
 
-[![Production Build](https://img.shields.io/badge/BUILD-PASSING%20(VITE%208.3.8)-brightgreen?style=for-the-badge)](file:///d:/RescueRoom/dist)
+[![Live Production](https://img.shields.io/badge/LIVE%20DEMO-rescueroom.onrender.com-brightgreen?style=for-the-badge&logo=render)](https://rescueroom.onrender.com/)
+[![Production Build](https://img.shields.io/badge/BUILD-PASSING%20(VITE%208.3.8)-brightgreen?style=for-the-badge)](https://rescueroom.onrender.com/)
 [![Zero Vulnerabilities](https://img.shields.io/badge/SECURITY-0%20VULNERABILITIES-blue?style=for-the-badge)](file:///d:/RescueRoom/docs/SECURITY.md)
 [![A11y Compliant](https://img.shields.io/badge/WCAG%202.1%20AA-197%20PASSES%20%7C%200%20FAILURES-teal?style=for-the-badge)](file:///d:/RescueRoom/docs/TESTING_AND_QA.md)
 [![3D WebGL](https://img.shields.io/badge/THREE.JS-60%20FPS%20DIGITAL%20TWIN-orange?style=for-the-badge)](file:///d:/RescueRoom/docs/PERFORMANCE_REPORT.md)
 [![CometChat](https://img.shields.io/badge/COMETCHAT-JS%20SDK%20v4%20%2B%20CALLS%20v5-1C1B18?style=for-the-badge&logo=chat&logoColor=white)](file:///d:/RescueRoom/docs/ARCHITECTURE.md)
+
+> 🌐 **Live Cloud Production URL:** [https://rescueroom.onrender.com/](https://rescueroom.onrender.com/)  
+> *Direct single-origin access with 3D WebGL Digital Twin, real-time CometChat communications, J1939 CAN-bus telemetry, and field diagnostics.*
 
 RescueRoom is a rugged, field-grade emergency dispatch, telematics telemetry, and remote diagnostics platform engineered for heavy mobile industrial machinery (surface mining excavators, quarry haul trucks, bulldozers, civil logistics).
 
@@ -40,9 +44,11 @@ node server/index.js
 ```
 
 ### 4. Operational URLs
-- **HTTP Staging Console:** [`http://localhost:3001/login`](http://localhost:3001/login)
-- **HTTPS Staging Console:** [`https://localhost:3443/login`](https://localhost:3443/login)
-- **System Health Endpoint:** [`http://localhost:3001/api/health`](http://localhost:3001/api/health)
+- **Live Cloud Production URL:** [https://rescueroom.onrender.com/](https://rescueroom.onrender.com/)
+- **Live Health Status:** [https://rescueroom.onrender.com/api/health](https://rescueroom.onrender.com/api/health)
+- **Local HTTP Staging Console:** [`http://localhost:3001/login`](http://localhost:3001/login)
+- **Local HTTPS Staging Console:** [`https://localhost:3443/login`](https://localhost:3443/login)
+- **Local Health Endpoint:** [`http://localhost:3001/api/health`](http://localhost:3001/api/health)
 
 ---
 
