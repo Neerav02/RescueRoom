@@ -1,0 +1,29 @@
+[Unit]
+Description=RescueRoom Heavy Machinery Emergency Dispatch Service
+Documentation=https://github.com/Neerav02/RescueRoom
+After=network.target
+
+[Service]
+Type=simple
+User=rescueroom
+Group=rescueroom
+WorkingDirectory=/opt/rescueroom
+EnvironmentFile=/etc/rescueroom/production.env
+ExecStart=/usr/bin/node server/index.js
+Restart=always
+RestartSec=5s
+KillSignal=SIGTERM
+TimeoutStopSec=10s
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=rescueroom
+
+# Security Sandboxing for Linux Host
+ProtectSystem=full
+ProtectHome=true
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+

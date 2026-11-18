@@ -6,15 +6,15 @@
  * torque specifications, and OSHA Lockout/Tagout (LOTO) safety protocols.
  */
 
-// Key can come from Vite env or user's local settings
+// Key can come from user's local dev session override
 export function getGeminiApiKey() {
   try {
     const customKey = localStorage.getItem('rescueroom_gemini_api_key');
     if (customKey && customKey.trim()) return customKey.trim();
-  } catch (e) {
+  } catch {
     // ignore
   }
-  return import.meta.env.VITE_GEMINI_API_KEY || '';
+  return '';
 }
 
 export function setGeminiApiKey(key) {
@@ -290,7 +290,8 @@ function runHeuristicDiagnosis({ equipment, incidentDescription, plateCaption, f
 
 /**
  * Run AI Visual Diagnostic on an Evidence Plate photo
- * Uses Gemini 2.5 Flash if API key is provided, or Tactical Engine fallback.
+ * Proxied via secure backend endpoint /api/gemini/analyze (protects API credentials)
+ * with automatic fallback to Tactical Forensics Heuristic Engine.
  */
 export async function analyzeEvidencePlate({
   imageUrl,
@@ -300,132 +301,62 @@ export async function analyzeEvidencePlate({
   incidentDescription = '',
   incidentGuid = ''
 }) {
-  const apiKey = getGeminiApiKey();
-
-  // If no Gemini key is set, immediately provide instant high-fidelity heuristic result
-  if (!apiKey) {
-    console.log('[RescueRoom AI] Running tactical heuristic machinery diagnostics (No VITE_GEMINI_API_KEY detected)...');
-    // Simulated realistic tactical inference delay (400ms)
-    await new Promise((r) => setTimeout(r, 450));
-    return runHeuristicDiagnosis({
-      equipment,
-      incidentDescription,
-      plateCaption: '',
-      fileName: imageUrl || 'plate_evidence.jpg'
-    });
-  }
-
-  // Live Google Gemini 2.5 Flash API Call
-  console.log('[RescueRoom AI] Connecting to Google Gemini 2.5 Flash for live multimodal machinery failure analysis...');
+  const customKey = getGeminiApiKey();
+  let sessionToken = '';
   try {
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    sessionToken = sessionStorage.getItem('rescueroom_session_token') || '';
+  } catch {
+    // ignore
+  }
 
-    const promptText = `
-You are RESCUE-AI, a Senior Industrial Equipment Master Mechanic & Forensics Diagnostics Engineer with deep specialization in Caterpillar, Komatsu, Parker Hannifin, and Cummins machinery.
-An urgent machinery breakdown occurred in the field:
-- Equipment: ${equipment}
-- Incident Description: ${incidentDescription || 'Machinery emergency reported by field operator'}
-- Incident Channel: ${incidentGuid}
-
-Examine this Evidence Plate photograph thoroughly and generate a JSON diagnosis with the following structure:
-{
-  "componentIdentified": "exact mechanical component name and standard (e.g., High-Pressure 4-Spiral Hydraulic Hose SAE 100R15)",
-  "failureMode": "detailed technical explanation of failure (e.g. carcass blowout, abrasive chafing, seal extrusion)",
-  "failureMechanics": ["bullet 1", "bullet 2", "bullet 3"],
-  "severityAssessment": "CRITICAL - IMMEDIATE STOPPAGE | SERIOUS - SERVICE REQUIRED | MINOR - CAUTION",
-  "immediateHazard": "high-pressure fluid injection hazard, thermal risk, crush zone, etc.",
-  "oemParts": [
-    { "partNumber": "CAT-154-8291", "name": "Exact Part Name", "cost": "$340.00", "leadTime": "In Stock" },
-    { "partNumber": "PARKER-787TC-16", "name": "Secondary Part", "cost": "$185.00", "leadTime": "1 Day" }
-  ],
-  "requiredTools": ["Tool 1 with size", "Tool 2 with torque spec", "Tool 3"],
-  "torqueSpecifications": [
-    { "item": "Flange Head Bolts", "spec": "145 Nm (107 ft-lb)", "lube": "Clean Engine Oil" }
-  ],
-  "lotoChecklist": [
-    "Step 1: Lower implement...",
-    "Step 2: Relieve tank pressure...",
-    "Step 3: Battery disconnect...",
-    "Step 4: Tag isolator..."
-  ],
-  "confidenceScore": 96,
-  "recommendedAction": "Actionable command for field technician in under 35 words."
-}
-IMPORTANT: Return ONLY raw, valid JSON without markdown fences.
-`;
-
-    // Prepare image payload
-    let imagePart = null;
-    if (fileData) {
-      // Base64 string directly provided
-      const cleanBase64 = fileData.includes('base64,') ? fileData.split('base64,')[1] : fileData;
-      imagePart = {
-        inline_data: {
-          mime_type: mimeType,
-          data: cleanBase64
-        }
-      };
-    } else if (imageUrl && imageUrl.startsWith('data:')) {
-      const parts = imageUrl.split(';base64,');
-      const detectedMime = parts[0].replace('data:', '');
-      imagePart = {
-        inline_data: {
-          mime_type: detectedMime || 'image/jpeg',
-          data: parts[1]
-        }
-      };
+  try {
+    const headers = { 'Content-Type': 'application/json' };
+    if (sessionToken) {
+      headers['Authorization'] = `Bearer ${sessionToken}`;
+    }
+    if (customKey) {
+      headers['x-gemini-api-key'] = customKey;
     }
 
-    const contents = [
-      {
-        parts: [
-          { text: promptText },
-          ...(imagePart ? [imagePart] : [])
-        ]
-      }
-    ];
-
-    const response = await fetch(endpoint, {
+    console.log('[RescueRoom AI] Dispatching Evidence Plate analysis to secure backend proxy...');
+    const response = await fetch('/api/gemini/analyze', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({
-        contents,
-        generationConfig: {
-          temperature: 0.2,
-          responseMimeType: 'application/json'
-        }
-      })
+        imageUrl,
+        fileData,
+        mimeType,
+        equipment,
+        incidentDescription,
+        incidentGuid,
+      }),
     });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.warn('[RescueRoom AI] Gemini API returned error, falling back to heuristic engine:', errText);
-      return runHeuristicDiagnosis({ equipment, incidentDescription, plateCaption: '', fileName: imageUrl });
+    if (response.ok) {
+      const data = await response.json();
+      if (data.diagnosis) {
+        return data.diagnosis;
+      }
+    } else {
+      console.warn('[RescueRoom AI] Backend analysis returned status', response.status);
     }
-
-    const data = await response.json();
-    const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!candidateText) {
-      throw new Error('Empty response from Gemini API');
-    }
-
-    const parsed = JSON.parse(candidateText.trim());
-    return {
-      ...parsed,
-      source: 'GOOGLE_GEMINI_2_5_FLASH',
-      model: 'Gemini 2.5 Flash Vision',
-      timestamp: new Date().toISOString()
-    };
   } catch (err) {
-    console.warn('[RescueRoom AI] Gemini fetch exception, falling back to internal heuristics:', err);
-    return runHeuristicDiagnosis({ equipment, incidentDescription, plateCaption: '', fileName: imageUrl });
+    console.warn('[RescueRoom AI] Backend analyze endpoint failed, engaging local tactical heuristics:', err);
   }
+
+  // Graceful offline fallback
+  return runHeuristicDiagnosis({
+    equipment,
+    incidentDescription,
+    plateCaption: '',
+    fileName: imageUrl || 'plate_evidence.jpg',
+  });
 }
 
 /**
  * Generate formatted broadcast message for CometChat feed
  */
-export function formatAiBroadcastMessage(diagnosis, operatorName = 'FIELD OPERATOR') {
+export function formatAiBroadcastMessage(diagnosis, _operatorName = 'FIELD OPERATOR') {
   const partsList = (diagnosis.oemParts || [])
     .map((p) => `  • ${p.partNumber} — ${p.name} (${p.cost}, ${p.leadTime})`)
     .join('\n');

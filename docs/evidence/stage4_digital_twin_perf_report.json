@@ -1,0 +1,30 @@
+{
+  "timestamp": "2026-11-14T21:33:08.356Z",
+  "metrics": {
+    "timeToInteractiveMs": 754,
+    "frameRate": {
+      "avgFps": 55,
+      "avgDeltaMs": 18.25,
+      "p95DeltaMs": 27.6,
+      "minDeltaMs": 6.7,
+      "maxDeltaMs": 62.6,
+      "totalFramesSampled": 119
+    },
+    "modeSwitching": {
+      "pbrToCadMs": 12.9,
+      "cadToXrayMs": 16.5,
+      "xrayToPbrMs": 18.1
+    },
+    "memory": {
+      "supported": true,
+      "usedHeapMB": 15.4,
+      "totalHeapMB": 22.75,
+      "heapLimitMB": 4192
+    },
+    "contextLoss": {
+      "simulated": true,
+      "contextLostFiredInitially": true
+    },
+    "mobileSupported": true
+  }
+}

@@ -1,0 +1,77 @@
+# ==============================================================================
+# RescueRoom Production Docker Compose Architecture
+# Deploys:
+#   1. rescueroom-app: Node.js 20 backend serving API + Vite static build
+#   2. rescueroom-redis: In-memory distributed session store (optional cluster mode)
+#   3. rescueroom-proxy: NGINX TLS termination, HTTP/2, caching, and rate limiting
+# ==============================================================================
+
+version: '3.8'
+
+services:
+  rescueroom-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rescueroom-app
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - ALLOW_DEMO_ROSTER=${ALLOW_DEMO_ROSTER:-false}
+      - PROD_PERSONNEL_CREDENTIALS=${PROD_PERSONNEL_CREDENTIALS:-}
+      - COMETCHAT_APP_ID=${COMETCHAT_APP_ID}
+      - COMETCHAT_REGION=${COMETCHAT_REGION}
+      - COMETCHAT_API_KEY=${COMETCHAT_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - SESSION_STORE=memory
+    ports:
+      - "3001:3001"
+    networks:
+      - rescueroom-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  rescueroom-redis:
+    image: redis:7-alpine
+    container_name: rescueroom-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-changeme_redis_secret}
+    volumes:
+      - redis-data:/data
+    networks:
+      - rescueroom-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  rescueroom-proxy:
+    image: nginx:1.25-alpine
+    container_name: rescueroom-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/ssl:/etc/ssl/certs:ro
+    depends_on:
+      - rescueroom-app
+    networks:
+      - rescueroom-net
+
+networks:
+  rescueroom-net:
+    driver: bridge
+
+volumes:
+  redis-data:
+    driver: local
+

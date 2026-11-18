@@ -1,0 +1,56 @@
+{
+  "Login Page": {
+    "totalImages": 0,
+    "totalButtons": 11,
+    "totalInputs": 0,
+    "totalHeadings": 3,
+    "issues": [],
+    "smallTargetsCount": 0,
+    "smallTargetsSample": []
+  },
+  "Operator Dispatch": {
+    "totalImages": 0,
+    "totalButtons": 5,
+    "totalInputs": 0,
+    "totalHeadings": 0,
+    "issues": [],
+    "smallTargetsCount": 0,
+    "smallTargetsSample": []
+  },
+  "Triage Board": {
+    "totalImages": 0,
+    "totalButtons": 13,
+    "totalInputs": 1,
+    "totalHeadings": 4,
+    "issues": [],
+    "smallTargetsCount": 0,
+    "smallTargetsSample": []
+  },
+  "Incident Room": {
+    "totalImages": 0,
+    "totalButtons": 15,
+    "totalInputs": 3,
+    "totalHeadings": 2,
+    "issues": [],
+    "smallTargetsCount": 0,
+    "smallTargetsSample": []
+  },
+  "Digital Twin CAD Engine": {
+    "totalImages": 0,
+    "totalButtons": 18,
+    "totalInputs": 0,
+    "totalHeadings": 3,
+    "issues": [],
+    "smallTargetsCount": 0,
+    "smallTargetsSample": []
+  },
+  "Service Report": {
+    "totalImages": 0,
+    "totalButtons": 14,
+    "totalInputs": 0,
+    "totalHeadings": 4,
+    "issues": [],
+    "smallTargetsCount": 0,
+    "smallTargetsSample": []
+  }
+}

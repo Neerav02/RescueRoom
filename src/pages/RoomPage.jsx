@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   CometChat,
@@ -30,10 +30,86 @@ export default function RoomPage({ currentUser }) {
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [selectedPlateForAi, setSelectedPlateForAi] = useState(null);
 
+  // Parse group metadata
+  const metadata = useMemo(() => {
+    try {
+      return typeof group?.getMetadata() === 'string'
+        ? JSON.parse(group.getMetadata())
+        : group?.getMetadata() || {};
+    } catch {
+      return group?.getMetadata() || {};
+    }
+  }, [group]);
+
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const lightboxRef = useRef(null);
+  const lightboxTriggerRef = useRef(null);
+
+  const isAnyModalOpen = Boolean(lightboxPlate || aiModalOpen);
+
+  // Focus management, focus trap, and Escape key listener for accessible Lightbox dialog
+  useEffect(() => {
+    if (lightboxPlate) {
+      const focusTimer = setTimeout(() => {
+        if (!lightboxRef.current) return;
+        const focusable = lightboxRef.current.querySelectorAll(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length > 0) {
+          focusable[0].focus();
+        } else {
+          lightboxRef.current.focus();
+        }
+      }, 50);
+
+      const handleKeyDown = (e) => {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          e.stopPropagation();
+          setLightboxPlate(null);
+          return;
+        }
+
+        if (e.key === 'Tab') {
+          if (!lightboxRef.current) return;
+          const focusable = lightboxRef.current.querySelectorAll(
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          );
+          if (focusable.length === 0) {
+            e.preventDefault();
+            return;
+          }
+          const first = focusable[0];
+          const last = focusable[focusable.length - 1];
+
+          if (e.shiftKey) {
+            if (document.activeElement === first || !lightboxRef.current.contains(document.activeElement)) {
+              e.preventDefault();
+              last.focus();
+            }
+          } else {
+            if (document.activeElement === last || !lightboxRef.current.contains(document.activeElement)) {
+              e.preventDefault();
+              first.focus();
+            }
+          }
+        }
+      };
+
+      document.addEventListener('keydown', handleKeyDown);
+
+      return () => {
+        clearTimeout(focusTimer);
+        document.removeEventListener('keydown', handleKeyDown);
+        if (lightboxTriggerRef.current && typeof lightboxTriggerRef.current.focus === 'function') {
+          lightboxTriggerRef.current.focus();
+        }
+      };
+    }
+  }, [lightboxPlate]);
 
   // Broadcast AI Forensics Report to CometChat incident channel
   const handleBroadcastAiReport = async (textReport) => {
@@ -65,10 +141,37 @@ export default function RoomPage({ currentUser }) {
     }
   };
 
+  const [serverAuthForbidden, setServerAuthForbidden] = useState(false);
+
+  // Server-side tenant authorization enforcement
+  useEffect(() => {
+    async function verifyWithServer() {
+      const sessionToken = sessionStorage.getItem('rescueroom_session_token');
+      if (!sessionToken || !guid) return;
+      try {
+        const resp = await fetch('/api/auth/authorize-tenant', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sessionToken}`,
+          },
+          body: JSON.stringify({ guid }),
+        });
+        if (resp.status === 403) {
+          console.warn('[RescueRoom Security] Server rejected incident access: 403 Forbidden.');
+          setServerAuthForbidden(true);
+        }
+      } catch (err) {
+        console.warn('[RescueRoom Security] Server authorization check notice:', err);
+      }
+    }
+    verifyWithServer();
+  }, [guid]);
+
   // Load group details & previous messages
   useEffect(() => {
     async function loadRoom() {
-      if (!guid) return;
+      if (!guid || serverAuthForbidden) return;
       try {
         console.log(`[RescueRoom] Fetching incident channel ${guid}...`);
         
@@ -104,7 +207,7 @@ export default function RoomPage({ currentUser }) {
       }
     }
     loadRoom();
-  }, [guid, currentUser]);
+  }, [guid, currentUser, serverAuthForbidden]);
 
   // Real-time message & typing listener (Prompt 4)
   useEffect(() => {
@@ -122,6 +225,11 @@ export default function RoomPage({ currentUser }) {
         onMediaMessageReceived: (mediaMsg) => {
           if (mediaMsg.getReceiverId() === guid) {
             setMessages((prev) => [...prev, mediaMsg]);
+          }
+        },
+        onCustomMessageReceived: (customMsg) => {
+          if (customMsg.getReceiverId() === guid) {
+            setMessages((prev) => [...prev, customMsg]);
           }
         },
         onTypingStarted: (typingIndicator) => {
@@ -168,14 +276,10 @@ export default function RoomPage({ currentUser }) {
 
   // Call duration counter when escalated
   useEffect(() => {
-    let interval = null;
-    if (activeRung !== 'CHAT') {
-      interval = setInterval(() => {
-        setCallDuration((prev) => prev + 1);
-      }, 1000);
-    } else {
-      setCallDuration(0);
-    }
+    if (activeRung === 'CHAT') return;
+    const interval = setInterval(() => {
+      setCallDuration((prev) => prev + 1);
+    }, 1000);
     return () => clearInterval(interval);
   }, [activeRung]);
 
@@ -218,7 +322,7 @@ export default function RoomPage({ currentUser }) {
       try {
         const indicator = new CometChat.TypingIndicator(guid, CometChat.RECEIVER_TYPE.GROUP);
         CometChat.endTyping(indicator);
-      } catch (e) {
+      } catch {
         // non-blocking
       }
 
@@ -286,18 +390,20 @@ export default function RoomPage({ currentUser }) {
 
   // Escalation Ladder handler (Prompt 6: Voice & Video Calling)
   const [callError, setCallError] = useState(null);
+  const [mediaHardwareNotice, setMediaHardwareNotice] = useState(null);
   const [isAudioMuted, setIsAudioMuted] = useState(false);
   const [isVideoMuted, setIsVideoMuted] = useState(false);
   const [localStream, setLocalStream] = useState(null);
   const videoPreviewRef = useRef(null);
 
   // Initialize and handle CometChat Calls / WebRTC session
-  const handleClimbLadder = async (rung) => {
+  const handleClimbLadder = useCallback(async (rung) => {
     if (rung === activeRung) return;
     setCallError(null);
 
     // If returning to CHAT rung -> end any active call session
     if (rung === 'CHAT') {
+      setMediaHardwareNotice(null);
       if (activeRung !== 'CHAT' && callDuration > 0) {
         // Stop local media stream tracks
         if (localStream) {
@@ -327,6 +433,7 @@ export default function RoomPage({ currentUser }) {
           console.warn(e);
         }
       }
+      setCallDuration(0);
       setActiveRung('CHAT');
       return;
     }
@@ -335,10 +442,15 @@ export default function RoomPage({ currentUser }) {
     try {
       console.log(`[RescueRoom] Escalating to ${rung} call on channel ${guid}...`);
       setActiveRung(rung);
+      setMediaHardwareNotice(null);
 
       // Ensure active CometChat authentication & group membership
-      await ensureUserLoggedIn(currentUser);
-      await ensureGroupJoined(guid);
+      try {
+        await ensureUserLoggedIn(currentUser);
+        await ensureGroupJoined(guid);
+      } catch (authErr) {
+        console.warn('[RescueRoom] Call auth sync notice:', authErr);
+      }
 
       // Attempt live WebRTC camera/microphone access
       try {
@@ -352,6 +464,7 @@ export default function RoomPage({ currentUser }) {
         }
       } catch (mediaErr) {
         console.warn('[RescueRoom] Camera/Mic access note (using tactical simulation fallback):', mediaErr);
+        setMediaHardwareNotice(`Media device restricted (${mediaErr.name || 'Unavailable'}). Tactical simulation active.`);
         // Does not crash — continues with tactical dark panel and live audio waveform
       }
 
@@ -364,20 +477,24 @@ export default function RoomPage({ currentUser }) {
         console.warn('[RescueRoom] CometChatCalls token notice (graceful fallback active):', callsErr);
       }
 
-      // Broadcast call start system message
-      const logCallStart = new CometChat.TextMessage(
-        guid,
-        `🚨 ESCALATION LADDER CLIMBED TO [${rung} CALL]\nSTATION: ${currentUser?.name.toUpperCase()} (${currentUser?.callsign})\nCHANNEL: ALL ROSTER UNITS STAND BY`,
-        CometChat.RECEIVER_TYPE.GROUP
-      );
-      const sent = await safeSendMessage(logCallStart, currentUser);
-      setMessages((prev) => [...prev, sent]);
+      // Broadcast call start system message (non-blocking)
+      try {
+        const logCallStart = new CometChat.TextMessage(
+          guid,
+          `🚨 ESCALATION LADDER CLIMBED TO [${rung} CALL]\nSTATION: ${currentUser?.name.toUpperCase()} (${currentUser?.callsign})\nCHANNEL: ALL ROSTER UNITS STAND BY`,
+          CometChat.RECEIVER_TYPE.GROUP
+        );
+        const sent = await safeSendMessage(logCallStart, currentUser);
+        setMessages((prev) => [...prev, sent]);
+      } catch (msgErr) {
+        console.warn('[RescueRoom] Call broadcast notice (media session active):', msgErr);
+      }
     } catch (err) {
       console.error('[RescueRoom] Escalation error:', err);
       setCallError(`Could not initialize ${rung} hardware: ${err.message}. Returning to chat.`);
       setActiveRung('CHAT');
     }
-  };
+  }, [activeRung, callDuration, localStream, guid, currentUser]);
 
   // Toggle Mute Audio
   const toggleMuteAudio = () => {
@@ -406,16 +523,12 @@ export default function RoomPage({ currentUser }) {
     }
   }, [localStream, activeRung]);
 
-  // Resolve incident with physical rubber stamp animation & CometChat metadata update (Prompt 7)
-  const [showStampAnimation, setShowStampAnimation] = useState(false);
-
-  const handleResolveIncident = async () => {
+  const handleResolveIncident = useCallback(async () => {
     // End active call if climbing
     if (activeRung !== 'CHAT') {
       await handleClimbLadder('CHAT');
     }
 
-    setShowStampAnimation(true);
     setIsResolved(true);
 
     try {
@@ -462,15 +575,8 @@ export default function RoomPage({ currentUser }) {
     } catch (err) {
       console.warn('[RescueRoom] Error updating group metadata to resolved:', err);
     }
-  };
+  }, [activeRung, currentUser, guid, metadata, group, handleClimbLadder]);
 
-  // Parse metadata
-  let metadata = {};
-  try {
-    metadata = typeof group?.getMetadata() === 'string' ? JSON.parse(group.getMetadata()) : group?.getMetadata() || {};
-  } catch {
-    metadata = group?.getMetadata() || {};
-  }
   const isCritical = metadata.severity === 'CRITICAL';
 
   // Count image plates for sequential numbering (PLATE 01, PLATE 02...)
@@ -479,8 +585,8 @@ export default function RoomPage({ currentUser }) {
   // Company responders list
   const companyResponders = DEMO_USERS.filter((u) => u.companyId === currentUser?.companyId);
 
-  // Prompt 9: Cross-Tenant Security Guard
-  const isUnauthorizedTenant = currentUser && guid && !guid.startsWith(`${currentUser.companyId}_inc_`);
+  // Prompt 9: Cross-Tenant Security Guard (Client + Server Validated)
+  const isUnauthorizedTenant = (currentUser && guid && !guid.startsWith(`${currentUser.companyId}_inc_`)) || serverAuthForbidden;
 
   if (isUnauthorizedTenant) {
     return (
@@ -502,9 +608,9 @@ export default function RoomPage({ currentUser }) {
               PROTOCOL 403 // TENANT ISOLATION ENFORCED
             </span>
           </div>
-          <h2 style={{ fontSize: '1.8rem', margin: '14px 0 8px' }}>
+          <h1 style={{ fontSize: '1.8rem', margin: '14px 0 8px' }}>
             UNAUTHORIZED TENANT INCIDENT CHANNEL
-          </h2>
+          </h1>
           <p
             className="mono"
             style={{
@@ -536,7 +642,8 @@ export default function RoomPage({ currentUser }) {
   return (
     <div style={{ width: '100%', flex: 1, padding: '24px 32px 48px' }}>
       <div style={{ maxWidth: '1440px', margin: '0 auto' }}>
-        {/* Top Incident Banner */}
+        <div inert={isAnyModalOpen ? '' : undefined} style={{ width: '100%' }}>
+          {/* Top Incident Banner */}
         <div
           style={{
             display: 'flex',
@@ -575,8 +682,9 @@ export default function RoomPage({ currentUser }) {
               }}
               className="paper-button"
               style={{
-                fontSize: '0.78rem',
-                padding: '8px 14px',
+                fontSize: '0.8rem',
+                minHeight: '44px',
+                padding: '10px 16px',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '6px',
@@ -592,7 +700,7 @@ export default function RoomPage({ currentUser }) {
             <button
               onClick={() => navigate(currentUser?.role === 'operator' ? '/operator' : '/board')}
               className="btn btn-hazard"
-              style={{ fontSize: '0.78rem', padding: '8px 14px' }}
+              style={{ minHeight: '44px', fontSize: '0.8rem', padding: '10px 16px' }}
             >
               ← BACK TO {currentUser?.role === 'operator' ? 'STATION' : 'TRIAGE BOARD'}
             </button>
@@ -601,7 +709,7 @@ export default function RoomPage({ currentUser }) {
               <button
                 onClick={handleResolveIncident}
                 className="btn btn-teal"
-                style={{ fontSize: '0.78rem', padding: '8px 16px' }}
+                style={{ minHeight: '44px', fontSize: '0.8rem', padding: '10px 18px' }}
               >
                 ✓ RESOLVE INCIDENT
               </button>
@@ -735,7 +843,9 @@ export default function RoomPage({ currentUser }) {
                 return (
                   <button
                     key={rung.id}
+                    type="button"
                     onClick={() => handleClimbLadder(rung.id)}
+                    aria-pressed={isActive}
                     className="btn"
                     style={{
                       width: '100%',
@@ -758,6 +868,38 @@ export default function RoomPage({ currentUser }) {
 
             <div className="mono" style={{ fontSize: '0.62rem', color: 'var(--color-ink-muted)', marginTop: '16px', textAlign: 'center' }}>
               CLIMB RUNG TO ESCALATE
+            </div>
+
+            {/* Real-time 3D Digital Twin Collaboration Button */}
+            <div style={{ width: '100%', marginTop: '16px', borderTop: 'var(--border-ink)', paddingTop: '14px' }}>
+              <button
+                type="button"
+                onClick={() =>
+                  navigate(
+                    `/twin?equipment=${encodeURIComponent(
+                      metadata?.equipment || 'Excavator EX-204'
+                    )}&incidentGuid=${guid}`
+                  )
+                }
+                className="btn btn-hazard"
+                style={{
+                  width: '100%',
+                  padding: '12px 6px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '4px',
+                  border: 'var(--border-ink-thick)',
+                  boxShadow: 'var(--shadow-hard-sm)',
+                }}
+                title="Launch Synchronized 3D Digital Twin for collaborative inspection"
+              >
+                <span style={{ fontSize: '1.4rem' }}>🚜</span>
+                <span style={{ fontSize: '0.78rem', fontWeight: 800 }}>3D TWIN</span>
+                <span className="mono" style={{ fontSize: '0.62rem', color: 'var(--color-ink-muted)' }}>
+                  COLLABORATE
+                </span>
+              </button>
             </div>
           </div>
 
@@ -795,15 +937,31 @@ export default function RoomPage({ currentUser }) {
                     borderBottom: '1px solid rgba(255, 255, 255, 0.15)',
                     paddingBottom: '12px',
                     marginBottom: '16px',
+                    flexWrap: 'wrap',
+                    gap: '8px',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                     <span className="stamp stamp-critical">
                       {activeRung} CALL ACTIVE
                     </span>
                     <span className="mono" style={{ fontSize: '0.8rem', color: 'var(--color-hazard)' }}>
                       CHANNEL: {guid}
                     </span>
+                    {mediaHardwareNotice && (
+                      <span
+                        className="mono"
+                        style={{
+                          fontSize: '0.68rem',
+                          backgroundColor: 'rgba(242, 183, 5, 0.15)',
+                          color: 'var(--color-hazard)',
+                          border: '1px solid var(--color-hazard)',
+                          padding: '2px 6px',
+                        }}
+                      >
+                        SIMULATED CARRIER
+                      </span>
+                    )}
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -817,7 +975,7 @@ export default function RoomPage({ currentUser }) {
                 {callError && (
                   <div
                     style={{
-                      backgroundColor: '#FFEBE8',
+                      backgroundColor: 'var(--color-vermilion-subtle)',
                       color: 'var(--color-vermilion)',
                       padding: '8px 12px',
                       marginBottom: '12px',
@@ -876,13 +1034,27 @@ export default function RoomPage({ currentUser }) {
                           }}
                         />
                       ) : (
-                        <div style={{ textAlign: 'center', zIndex: 1 }}>
+                        <div style={{ textAlign: 'center', zIndex: 1, padding: '16px' }}>
                           <div style={{ fontSize: '3rem', marginBottom: '8px' }}>📹</div>
                           <div className="mono" style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-hazard)' }}>
-                            {isVideoMuted ? 'VIDEO STREAM PAUSED' : 'TACTICAL OPTICAL FEED ACTIVE'}
+                            {isVideoMuted ? 'VIDEO STREAM PAUSED' : 'TACTICAL OPTICAL SIMULATION'}
                           </div>
-                          <div className="mono" style={{ fontSize: '0.75rem', opacity: 0.7, marginTop: '4px' }}>
-                            CAMERA SENSOR INITIALIZED · {currentUser?.callsign}
+                          <div className="mono" style={{ fontSize: '0.75rem', opacity: 0.8, marginTop: '4px', color: 'var(--color-bone)' }}>
+                            {mediaHardwareNotice || `CAMERA SENSOR ACTIVE · ${currentUser?.callsign}`}
+                          </div>
+                          <div
+                            className="mono"
+                            style={{
+                              fontSize: '0.68rem',
+                              backgroundColor: 'rgba(242, 183, 5, 0.15)',
+                              color: 'var(--color-hazard)',
+                              border: '1px solid var(--color-hazard)',
+                              padding: '4px 8px',
+                              marginTop: '10px',
+                              display: 'inline-block',
+                            }}
+                          >
+                            [RADIO/CARRIER BACKBONE ONLINE · DETERMINISTIC WEBRTC SIMULATION]
                           </div>
                         </div>
                       )}
@@ -996,7 +1168,9 @@ export default function RoomPage({ currentUser }) {
                   }}
                 >
                   <button
+                    type="button"
                     onClick={toggleMuteAudio}
+                    aria-pressed={isAudioMuted}
                     className={`btn ${isAudioMuted ? 'btn-vermilion' : 'btn-hazard'}`}
                     style={{ fontSize: '0.82rem', padding: '10px 18px' }}
                   >
@@ -1005,7 +1179,9 @@ export default function RoomPage({ currentUser }) {
 
                   {activeRung === 'VIDEO' && (
                     <button
+                      type="button"
                       onClick={toggleMuteVideo}
+                      aria-pressed={isVideoMuted}
                       className={`btn ${isVideoMuted ? 'btn-vermilion' : 'btn'}`}
                       style={{ fontSize: '0.82rem', padding: '10px 18px', backgroundColor: isVideoMuted ? 'var(--color-vermilion)' : 'var(--color-paper-light)', color: isVideoMuted ? '#FFF' : 'var(--color-ink)' }}
                     >
@@ -1049,7 +1225,7 @@ export default function RoomPage({ currentUser }) {
                 {uploadError && (
                   <div
                     style={{
-                      backgroundColor: '#FFEBE8',
+                      backgroundColor: 'var(--color-vermilion-subtle)',
                       borderBottom: 'var(--border-ink)',
                       padding: '8px 16px',
                       display: 'flex',
@@ -1062,7 +1238,12 @@ export default function RoomPage({ currentUser }) {
                     </span>
                     <button
                       onClick={() => setUploadError(null)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}
+                      aria-label="Dismiss upload error notice"
+                      className="btn-icon-dismiss"
+                      style={{
+                        color: 'var(--color-vermilion)',
+                        fontWeight: 700,
+                      }}
                     >
                       ✕
                     </button>
@@ -1090,9 +1271,9 @@ export default function RoomPage({ currentUser }) {
                       const sender = msg.getSender ? msg.getSender() : null;
                       const senderName = sender ? sender.getName() : 'SYSTEM DISPATCH';
                       const isMe = sender && sender.getUid() === currentUser?.uid;
-                      const timeStr = msg.getSentAt
+                      const timeStr = msg.getSentAt && msg.getSentAt()
                         ? new Date(msg.getSentAt() * 1000).toISOString().substring(11, 19)
-                        : new Date().toISOString().substring(11, 19);
+                        : '--:--:--';
 
                       const isMedia = msg.getType && msg.getType() === CometChat.MESSAGE_TYPE.IMAGE;
                       let plateNumStr = '';
@@ -1145,14 +1326,30 @@ export default function RoomPage({ currentUser }) {
                                 cursor: 'pointer',
                                 transition: 'var(--transition-tactile)',
                               }}
-                              onClick={() =>
+                              role="button"
+                              tabIndex={0}
+                              aria-label={`Inspect evidence plate ${plateNumStr}`}
+                              onClick={(e) => {
+                                lightboxTriggerRef.current = e.currentTarget;
                                 setLightboxPlate({
                                   url: msg.getData().url,
                                   plateNum: plateNumStr,
                                   sender: senderName,
                                   time: timeStr,
-                                })
-                              }
+                                });
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  lightboxTriggerRef.current = e.currentTarget;
+                                  setLightboxPlate({
+                                    url: msg.getData().url,
+                                    plateNum: plateNumStr,
+                                    sender: senderName,
+                                    time: timeStr,
+                                  });
+                                }
+                              }}
                               onMouseEnter={(e) => {
                                 e.currentTarget.style.transform = 'translate(-2px, -2px)';
                                 e.currentTarget.style.boxShadow = 'var(--shadow-hard-lg)';
@@ -1186,6 +1383,7 @@ export default function RoomPage({ currentUser }) {
                                 <img
                                   src={msg.getData().url}
                                   alt="Fault diagnostic evidence"
+                                  loading="lazy"
                                   style={{
                                     width: '100%',
                                     maxHeight: '240px',
@@ -1218,13 +1416,14 @@ export default function RoomPage({ currentUser }) {
                                   style={{
                                     backgroundColor: 'var(--color-hazard)',
                                     color: 'var(--color-ink)',
-                                    fontSize: '0.68rem',
+                                    fontSize: '0.74rem',
                                     fontWeight: 800,
-                                    padding: '2px 8px',
+                                    minHeight: '44px',
+                                    padding: '8px 14px',
                                     fontFamily: 'var(--font-mono)',
                                     display: 'inline-flex',
                                     alignItems: 'center',
-                                    gap: '4px',
+                                    gap: '6px',
                                   }}
                                 >
                                   🤖 AI DAMAGE SCAN
@@ -1232,6 +1431,29 @@ export default function RoomPage({ currentUser }) {
                                 <span className="mono" style={{ fontSize: '0.68rem', fontWeight: 700 }}>
                                   🔍 INSPECT
                                 </span>
+                              </div>
+                            </div>
+                          ) : (msg.getType && (msg.getType() === 'custom' || msg.getCategory?.() === 'custom')) ? (
+                            <div
+                              style={{
+                                padding: '10px 14px',
+                                backgroundColor: msg.getCustomType?.() === 'can_alert' ? 'var(--color-vermilion-subtle)' : 'var(--color-paper-light)',
+                                borderLeft: `4px solid ${msg.getCustomType?.() === 'can_alert' ? 'var(--color-vermilion)' : 'var(--color-hazard)'}`,
+                                border: '1px solid var(--color-ink)',
+                                boxShadow: 'var(--shadow-hard-sm)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px',
+                              }}
+                            >
+                              <span style={{ fontSize: '1.2rem' }}>
+                                {msg.getCustomType?.() === 'can_alert' ? '⚠️' : '🔄'}
+                              </span>
+                              <div className="mono" style={{ fontSize: '0.8rem', fontWeight: 700 }}>
+                                {msg.getCustomData?.()?.text ||
+                                  (msg.getCustomData?.()?.subsystemLabel
+                                    ? `3D DIGITAL TWIN: ${msg.getCustomData?.()?.senderName || 'Crew'} focused ${msg.getCustomData?.()?.subsystemLabel} (${Math.round((msg.getCustomData?.()?.explodedAmount || 0) * 100)}% separation)`
+                                    : '3D DIGITAL TWIN SYNCHRONIZED')}
                               </div>
                             </div>
                           ) : (
@@ -1293,13 +1515,14 @@ export default function RoomPage({ currentUser }) {
                     capture="environment"
                     ref={cameraInputRef}
                     onChange={handleMediaUpload}
+                    aria-label="Capture live photographic evidence using device camera"
                     style={{ display: 'none' }}
                   />
                   <button
                     type="button"
                     onClick={() => cameraInputRef.current?.click()}
-                    className="btn btn-vermilion"
-                    style={{ padding: '9px 12px', fontSize: '0.8rem' }}
+                    className="btn btn-hazard"
+                    style={{ minHeight: '44px', padding: '10px 14px', fontSize: '0.8rem' }}
                     title="Capture live fault photo with camera"
                   >
                     📸 CAMERA
@@ -1311,13 +1534,14 @@ export default function RoomPage({ currentUser }) {
                     accept="image/png,image/jpeg,image/webp"
                     ref={fileInputRef}
                     onChange={handleMediaUpload}
+                    aria-label="Upload photographic evidence plate file from disk"
                     style={{ display: 'none' }}
                   />
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     className="btn btn-hazard"
-                    style={{ padding: '9px 12px', fontSize: '0.8rem' }}
+                    style={{ minHeight: '44px', padding: '10px 14px', fontSize: '0.8rem' }}
                     title="Upload photo from disk"
                   >
                     📁 ATTACH
@@ -1325,20 +1549,22 @@ export default function RoomPage({ currentUser }) {
 
                   {/* Text Input with Real-time Typing Notification (Prompt 4) */}
                   <input
+                    id="incident-room-chat-input"
                     type="text"
                     className="form-input"
+                    aria-label="Type dispatch transmission or maintenance log message"
                     placeholder="Type dispatch transmission or maintenance log..."
                     value={inputText}
                     onChange={handleInputChange}
                     disabled={isSending}
-                    style={{ flex: 1 }}
+                    style={{ flex: 1, minHeight: '44px' }}
                   />
 
                   <button
                     type="submit"
                     className="btn btn-dark"
                     disabled={isSending || !inputText.trim()}
-                    style={{ padding: '9px 20px', fontSize: '0.85rem' }}
+                    style={{ minHeight: '44px', padding: '10px 20px', fontSize: '0.85rem' }}
                   >
                     {isSending ? 'SENDING...' : 'TRANSMIT →'}
                   </button>
@@ -1366,7 +1592,7 @@ export default function RoomPage({ currentUser }) {
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ fontSize: '1.05rem', margin: 0 }}>WHO'S HERE</h3>
+                <h2 style={{ fontSize: '1.05rem', margin: 0 }}>WHO'S HERE</h2>
                 <span className="presence-dot" />
               </div>
               <div className="mono" style={{ fontSize: '0.7rem', color: 'var(--color-ink-muted)', marginTop: '2px' }}>
@@ -1433,6 +1659,8 @@ export default function RoomPage({ currentUser }) {
             </div>
           </div>
         </div>
+        {/* End of Background Interactive Content */}
+        </div>
 
         {/* Full-Screen Evidence Inspection Lightbox (Prompt 5) */}
         {lightboxPlate && (
@@ -1454,6 +1682,11 @@ export default function RoomPage({ currentUser }) {
             onClick={() => setLightboxPlate(null)}
           >
             <div
+              ref={lightboxRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="lightbox-plate-title"
+              tabIndex={-1}
               className="paper-card"
               style={{
                 maxWidth: '900px',
@@ -1461,6 +1694,7 @@ export default function RoomPage({ currentUser }) {
                 backgroundColor: 'var(--color-bone)',
                 border: 'var(--border-ink-thick)',
                 boxShadow: 'var(--shadow-hard-xl)',
+                outline: 'none',
               }}
               onClick={(e) => e.stopPropagation()}
             >
@@ -1472,15 +1706,33 @@ export default function RoomPage({ currentUser }) {
                   borderBottom: 'var(--border-ink)',
                   paddingBottom: '12px',
                   marginBottom: '16px',
+                  flexWrap: 'wrap',
+                  gap: '8px',
                 }}
               >
                 <div>
                   <span className="stamp stamp-critical">{lightboxPlate.plateNum}</span>
-                  <span className="mono" style={{ marginLeft: '10px', fontSize: '0.85rem', fontWeight: 700 }}>
+                  <h2
+                    id="lightbox-plate-title"
+                    className="mono"
+                    style={{
+                      marginLeft: '10px',
+                      fontSize: '0.85rem',
+                      fontWeight: 700,
+                      margin: '0 0 0 10px',
+                      display: 'inline-block',
+                    }}
+                  >
                     FAULT EVIDENCE INSPECTION · {lightboxPlate.sender.toUpperCase()} [{lightboxPlate.time} UTC]
-                  </span>
+                  </h2>
                 </div>
-                <button onClick={() => setLightboxPlate(null)} className="btn btn-hazard">
+                <button
+                  type="button"
+                  onClick={() => setLightboxPlate(null)}
+                  className="btn btn-hazard"
+                  aria-label="Close fault evidence inspection"
+                  style={{ minHeight: '44px', padding: '10px 18px' }}
+                >
                   ✕ CLOSE INSPECTION
                 </button>
               </div>
@@ -1489,6 +1741,7 @@ export default function RoomPage({ currentUser }) {
                 <img
                   src={lightboxPlate.url}
                   alt="Full-res fault inspection"
+                  loading="lazy"
                   style={{
                     width: '100%',
                     maxHeight: '68vh',
@@ -1506,17 +1759,20 @@ export default function RoomPage({ currentUser }) {
                   marginTop: '12px',
                   paddingTop: '8px',
                   borderTop: '1px dashed var(--color-ink-subtle)',
+                  flexWrap: 'wrap',
+                  gap: '8px',
                 }}
               >
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                   <button
                     type="button"
                     onClick={() => {
                       setSelectedPlateForAi(lightboxPlate.url);
+                      setLightboxPlate(null);
                       setAiModalOpen(true);
                     }}
                     className="btn btn-hazard"
-                    style={{ fontSize: '0.72rem', padding: '4px 12px', fontWeight: 800 }}
+                    style={{ minHeight: '44px', fontSize: '0.74rem', padding: '8px 14px', fontWeight: 800 }}
                   >
                     🤖 RUN AI FORENSICS SCAN
                   </button>
@@ -1525,7 +1781,7 @@ export default function RoomPage({ currentUser }) {
                     target="_blank"
                     rel="noreferrer"
                     className="btn"
-                    style={{ fontSize: '0.72rem', padding: '4px 10px' }}
+                    style={{ minHeight: '44px', fontSize: '0.74rem', padding: '8px 14px' }}
                   >
                     OPEN ORIGINAL FILE ↗
                   </a>

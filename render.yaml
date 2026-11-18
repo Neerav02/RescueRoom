@@ -1,0 +1,28 @@
+# RescueRoom — Production Infrastructure Blueprint for Render (Free Tier)
+# Unified single-origin Web Service hosting both React frontend bundle & hardened Node.js backend.
+
+services:
+  - type: web
+    name: rescueroom
+    env: node
+    plan: free
+    region: oregon
+    buildCommand: npm install && npm run build
+    startCommand: node server/index.js
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ALLOW_DEMO_ROSTER
+        value: "true"
+      - key: PORT
+        value: 10000
+      - key: COMETCHAT_APP_ID
+        sync: false
+      - key: COMETCHAT_REGION
+        sync: false
+      - key: COMETCHAT_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+

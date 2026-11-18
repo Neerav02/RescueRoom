@@ -14,6 +14,7 @@ export default function OperatorPage({ currentUser }) {
   const [formOpen, setFormOpen] = useState(false);
   const [equipment, setEquipment] = useState(equipmentOptions[0]);
   const [severity, setSeverity] = useState('CRITICAL');
+  const [focusedSeverity, setFocusedSeverity] = useState(null);
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
@@ -152,8 +153,8 @@ export default function OperatorPage({ currentUser }) {
   ];
 
   return (
-    <div style={{ width: '100%', flex: 1, padding: '32px 32px 64px' }}>
-      <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+    <div className="operator-page-container">
+      <div style={{ maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
         {/* Top Operational Status Bar */}
         <div
           style={{
@@ -168,18 +169,24 @@ export default function OperatorPage({ currentUser }) {
           }}
         >
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               <span className="stamp stamp-critical">FIELD STATION</span>
               <span className="mono" style={{ fontSize: '0.78rem', color: 'var(--color-ink-muted)' }}>
                 OPERATOR CALLSIGN: {currentUser?.callsign}
               </span>
             </div>
-            <h1 style={{ fontSize: '2.2rem', margin: '4px 0 0' }}>
+            <h1
+              style={{
+                fontSize: 'clamp(1.5rem, 4vw, 2.2rem)',
+                margin: '4px 0 0',
+                wordBreak: 'break-word',
+              }}
+            >
               OPERATOR EMERGENCY DISPATCH
             </h1>
           </div>
 
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
             <div
               className="paper-card"
               style={{
@@ -212,38 +219,36 @@ export default function OperatorPage({ currentUser }) {
         </div>
 
         {/* The Urgency Action Center */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: formOpen ? '1fr 1fr' : '1fr',
-            gap: '32px',
-            marginBottom: '40px',
-            transition: 'all 0.2s ease',
-          }}
-        >
+        <div className={`operator-action-grid ${formOpen ? 'form-open' : ''}`}>
           {/* Giant Emergency Button Trigger */}
           <div
-            className="paper-card"
+            className="paper-card operator-emergency-card"
             style={{
               backgroundColor: 'var(--color-paper-light)',
               border: 'var(--border-ink-thick)',
               boxShadow: 'var(--shadow-hard-xl)',
-              padding: '36px',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'center',
               alignItems: 'center',
               textAlign: 'center',
-              minHeight: '360px',
+              minWidth: 0,
             }}
           >
             <div className="hazard-tape" style={{ width: '100%', height: '14px', marginBottom: '24px' }} />
-            
+
             <span className="stamp stamp-critical" style={{ fontSize: '0.85rem', padding: '4px 12px', marginBottom: '16px' }}>
               IMMEDIATE ESCALATION PROTOCOL
             </span>
 
-            <h2 style={{ fontSize: '2rem', marginBottom: '12px', letterSpacing: '-0.02em' }}>
+            <h2
+              style={{
+                fontSize: 'clamp(1.4rem, 3.5vw, 2rem)',
+                marginBottom: '12px',
+                letterSpacing: '-0.02em',
+                wordBreak: 'break-word',
+              }}
+            >
               MACHINERY FAULT OR SITE EMERGENCY?
             </h2>
 
@@ -268,12 +273,12 @@ export default function OperatorPage({ currentUser }) {
           {/* Incident Requisition Form (Appears when trigger is pressed) */}
           {formOpen && (
             <div
-              className="paper-card"
+              className="paper-card operator-form-card"
               style={{
                 backgroundColor: 'var(--color-bone)',
                 border: 'var(--border-ink-thick)',
                 boxShadow: 'var(--shadow-hard-lg)',
-                padding: '28px',
+                minWidth: 0,
               }}
             >
               <div
@@ -293,7 +298,13 @@ export default function OperatorPage({ currentUser }) {
                 <button
                   onClick={() => setFormOpen(false)}
                   className="btn"
-                  style={{ padding: '4px 10px', fontSize: '0.75rem' }}
+                  aria-label="Cancel incident dispatch form"
+                  style={{
+                    minHeight: '44px',
+                    minWidth: '44px',
+                    padding: '10px 18px',
+                    fontSize: '0.82rem',
+                  }}
                 >
                   ✕ CANCEL
                 </button>
@@ -303,7 +314,7 @@ export default function OperatorPage({ currentUser }) {
                 <div
                   className="paper-card"
                   style={{
-                    backgroundColor: '#FFEBE8',
+                    backgroundColor: 'var(--color-vermilion-subtle)',
                     borderColor: 'var(--color-vermilion)',
                     borderLeft: '6px solid var(--color-vermilion)',
                     marginBottom: '16px',
@@ -319,8 +330,23 @@ export default function OperatorPage({ currentUser }) {
               <form onSubmit={handleSubmitIncident}>
                 {/* Equipment Picker */}
                 <div className="form-group">
-                  <label className="form-label">ASSIGNED EQUIPMENT / UNIT</label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <label htmlFor="operator-equipment-select" className="form-label" style={{ margin: 0 }}>
+                      ASSIGNED EQUIPMENT / UNIT
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => window.open(`/twin?equipment=${encodeURIComponent(equipment)}`, '_blank')}
+                      className="btn"
+                      style={{ padding: '3px 8px', fontSize: '0.7rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                      title="Inspect 3D digital twin of this machinery"
+                    >
+                      <span style={{ color: 'var(--color-cad-active)' }}>◈</span>
+                      <span>3D TWIN EXPLORER ↗</span>
+                    </button>
+                  </div>
                   <select
+                    id="operator-equipment-select"
                     className="form-select"
                     value={equipment}
                     onChange={(e) => setEquipment(e.target.value)}
@@ -333,20 +359,29 @@ export default function OperatorPage({ currentUser }) {
                   </select>
                 </div>
 
-                {/* Severity Tappable Tags */}
-                <div className="form-group">
-                  <label className="form-label">SEVERITY LEVEL (TAP TO CLASSIFY)</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                {/* Severity Accessible Radio Group */}
+                <fieldset className="form-group" style={{ border: 'none', padding: 0, margin: '0 0 18px 0' }}>
+                  <legend className="form-label" style={{ marginBottom: '6px', display: 'block' }}>
+                    SEVERITY LEVEL (CLASSIFICATION)
+                  </legend>
+                  <div
+                    role="radiogroup"
+                    aria-label="Incident Severity Level"
+                    className="operator-severity-grid"
+                  >
                     {[
                       { id: 'CRITICAL', label: 'CRITICAL', desc: 'Work Stoppage / Safety Risk', color: 'var(--color-vermilion)', text: '#FFF' },
                       { id: 'SERIOUS', label: 'SERIOUS', desc: 'Impaired Function', color: 'var(--color-hazard)', text: 'var(--color-ink)' },
                       { id: 'MINOR', label: 'MINOR', desc: 'Advisory / Maintenance', color: 'var(--color-paper-light)', text: 'var(--color-ink)' },
                     ].map((sev) => {
                       const isSelected = severity === sev.id;
+                      const isFocused = focusedSeverity === sev.id;
+                      const radioId = `severity-radio-${sev.id.toLowerCase()}`;
                       return (
-                        <div
+                        <label
                           key={sev.id}
-                          onClick={() => setSeverity(sev.id)}
+                          htmlFor={radioId}
+                          className="operator-severity-option"
                           style={{
                             border: isSelected ? '3px solid var(--color-ink)' : 'var(--border-ink)',
                             backgroundColor: isSelected ? sev.color : 'var(--color-paper-light)',
@@ -357,22 +392,45 @@ export default function OperatorPage({ currentUser }) {
                             boxShadow: isSelected ? 'var(--shadow-hard-lg)' : 'var(--shadow-hard-sm)',
                             transform: isSelected ? 'translate(-1px, -1px)' : 'none',
                             transition: 'var(--transition-tactile)',
+                            outline: isFocused ? '2px solid var(--color-ink)' : 'none',
+                            outlineOffset: '2px',
                           }}
                         >
+                          <input
+                            type="radio"
+                            id={radioId}
+                            name="incident-severity"
+                            value={sev.id}
+                            checked={isSelected}
+                            onChange={() => setSeverity(sev.id)}
+                            onFocus={() => setFocusedSeverity(sev.id)}
+                            onBlur={() => setFocusedSeverity(null)}
+                            style={{
+                              position: 'absolute',
+                              opacity: 0,
+                              width: '1px',
+                              height: '1px',
+                              margin: '-1px',
+                              overflow: 'hidden',
+                              clip: 'rect(0, 0, 0, 0)',
+                              border: 0,
+                            }}
+                          />
                           <div style={{ fontWeight: 800, fontSize: '0.95rem' }}>{sev.label}</div>
                           <div className="mono" style={{ fontSize: '0.65rem', opacity: 0.85, marginTop: '2px' }}>
                             {sev.desc}
                           </div>
-                        </div>
+                        </label>
                       );
                     })}
                   </div>
-                </div>
+                </fieldset>
 
                 {/* Fault Description */}
                 <div className="form-group">
-                  <label className="form-label">ONE-LINE FAULT DESCRIPTION</label>
+                  <label htmlFor="operator-fault-description" className="form-label">ONE-LINE FAULT DESCRIPTION</label>
                   <input
+                    id="operator-fault-description"
                     type="text"
                     className="form-input"
                     placeholder="e.g. Hydraulic pressure drop on main lift cylinder..."
@@ -393,10 +451,13 @@ export default function OperatorPage({ currentUser }) {
                         className="btn"
                         style={{
                           justifyContent: 'flex-start',
-                          padding: '6px 10px',
+                          padding: '8px 10px',
                           fontSize: '0.72rem',
                           textAlign: 'left',
                           backgroundColor: 'var(--color-paper-light)',
+                          whiteSpace: 'normal',
+                          wordBreak: 'break-word',
+                          lineHeight: 1.3,
                         }}
                       >
                         ▸ {preset}
@@ -449,7 +510,7 @@ export default function OperatorPage({ currentUser }) {
               NO ACTIVE INCIDENTS FOR {currentUser?.companyName.toUpperCase()}. ALL FLEET SYSTEMS OPERATIONAL.
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
+            <div className="operator-incidents-grid">
               {recentIncidents.map((inc) => {
                 const meta = inc.getMetadata() || {};
                 const sev = meta.severity || 'SERIOUS';
@@ -457,13 +518,13 @@ export default function OperatorPage({ currentUser }) {
                   sev === 'CRITICAL'
                     ? 'stamp-critical'
                     : sev === 'SERIOUS'
-                    ? 'stamp-serious'
-                    : 'stamp-minor';
+                      ? 'stamp-serious'
+                      : 'stamp-minor';
 
                 return (
                   <div
                     key={inc.getGuid()}
-                    className="paper-card"
+                    className="paper-card operator-incident-card"
                     style={{
                       backgroundColor: 'var(--color-bone)',
                       cursor: 'pointer',
@@ -477,10 +538,10 @@ export default function OperatorPage({ currentUser }) {
                         {inc.getMembersCount()} RESPONDERS
                       </span>
                     </div>
-                    <div style={{ fontWeight: 700, fontSize: '1.05rem', marginBottom: '4px' }}>
+                    <div style={{ fontWeight: 700, fontSize: '1.05rem', marginBottom: '4px', wordBreak: 'break-word' }}>
                       {inc.getName()}
                     </div>
-                    <div className="mono" style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)', marginBottom: '12px' }}>
+                    <div className="mono" style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)', marginBottom: '12px', wordBreak: 'break-word' }}>
                       {meta.description || 'Incident in progress...'}
                     </div>
                     <button className="btn btn-hazard" style={{ width: '100%', fontSize: '0.75rem', padding: '6px' }}>

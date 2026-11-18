@@ -1,0 +1,78 @@
+{
+  "timestamp": "2026-11-14T22:09:57.656Z",
+  "coreWebVitals": {
+    "/login": {
+      "fcpMs": 156,
+      "lcpMs": 432,
+      "cls": 0.0109
+    },
+    "/operator": {
+      "fcpMs": 380,
+      "lcpMs": 712,
+      "cls": 0.0117
+    },
+    "/board": {
+      "fcpMs": 140,
+      "lcpMs": 572,
+      "cls": 0.0054
+    },
+    "/twin": {
+      "fcpMs": 120,
+      "lcpMs": 696,
+      "cls": 0.06
+    },
+    "/room/northwind_inc_104": {
+      "fcpMs": 112,
+      "lcpMs": 480,
+      "cls": 0.016
+    },
+    "/report/northwind_inc_104": {
+      "fcpMs": 156,
+      "lcpMs": 504,
+      "cls": 0.0112
+    }
+  },
+  "vendorChunkIsolation": {
+    "/login": {
+      "callsChunkLoaded": false,
+      "loadedScriptsCount": 7
+    },
+    "/operator": {
+      "callsChunkLoaded": false,
+      "loadedScriptsCount": 7
+    },
+    "/board": {
+      "callsChunkLoaded": false,
+      "loadedScriptsCount": 10
+    },
+    "/twin": {
+      "callsChunkLoaded": false,
+      "loadedScriptsCount": 8
+    },
+    "/room/northwind_inc_104": {
+      "callsChunkLoaded": false,
+      "loadedScriptsCount": 10
+    },
+    "/report/northwind_inc_104": {
+      "callsChunkLoaded": false,
+      "loadedScriptsCount": 9
+    }
+  },
+  "memoryCycleLeakTest": {
+    "initialHeapMb": 15.38,
+    "finalHeapMb": 23.7,
+    "heapDeltaMb": 8.32,
+    "readings": [
+      17.11,
+      20.58,
+      24.03,
+      16.38,
+      23.7
+    ],
+    "leakDetected": false
+  },
+  "networkResilience": {
+    "offlineUiStable": true,
+    "reconnectHandled": true
+  }
+}

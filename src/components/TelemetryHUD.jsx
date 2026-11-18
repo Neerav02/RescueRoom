@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MACHINERY_CATALOG } from '../lib/gemini';
+import DigitalTwinCanvas from './DigitalTwinCanvas';
 
 /**
  * Equipment Telemetry HUD & Interactive Vector Schematics
@@ -14,17 +14,38 @@ export default function TelemetryHUD({
 }) {
   const [expanded, setExpanded] = useState(initiallyExpanded);
   const [selectedSubsystem, setSelectedSubsystem] = useState(null);
+  const [focusedNodeId, setFocusedNodeId] = useState(null);
+  const [viewMode, setViewMode] = useState('2d'); // '2d' | '3d'
+
+  // Reduced-motion detection for accessible telemetry HUD animations
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() => {
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const handleChange = () => setPrefersReducedMotion(mediaQuery.matches);
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    } else if (mediaQuery.addListener) {
+      mediaQuery.addListener(handleChange);
+      return () => mediaQuery.removeListener(handleChange);
+    }
+  }, []);
 
   // Live fluctuating telemetry parameters (CAN-bus simulation)
   const [pressurePsi, setPressurePsi] = useState(isResolved ? 4180 : 5120);
   const [tempCelsius, setTempCelsius] = useState(isResolved ? 86 : 108);
   const [engineRpm, setEngineRpm] = useState(isResolved ? 1850 : 2140);
-  const [jitter, setJitter] = useState(0);
 
   // Micro-jitter simulation for realistic heavy machinery CAN-bus telemetry
   useEffect(() => {
     const interval = setInterval(() => {
-      setJitter((prev) => (prev === 0 ? 1 : 0));
       if (!isResolved) {
         // High fluctuating critical pressure readings
         setPressurePsi(Math.floor(5050 + Math.random() * 180));
@@ -210,10 +231,27 @@ export default function TelemetryHUD({
                 borderRadius: '50%',
                 backgroundColor: isResolved ? 'var(--color-teal)' : 'var(--color-vermilion)',
                 boxShadow: isResolved ? '0 0 6px var(--color-teal)' : '0 0 8px var(--color-vermilion)',
-                animation: isResolved ? 'none' : 'blink 1.2s infinite',
+                animation: isResolved || prefersReducedMotion ? 'none' : 'blink 1.2s infinite',
               }}
             />
-            {isResolved ? 'CAN-BUS NOMINAL' : 'CAN-BUS FAULT ACTIVE'}
+            {isResolved ? 'CAN-BUS (SYNTHETIC) · NOMINAL' : 'CAN-BUS (SYNTHETIC) · FAULT ACTIVE'}
+          </span>
+
+          {/* Explicit Synthetic Simulation Disclosure Badge */}
+          <span
+            className="mono"
+            style={{
+              fontSize: '0.68rem',
+              fontWeight: 700,
+              padding: '2px 6px',
+              backgroundColor: '#FEF3C7',
+              color: '#92400E',
+              border: '1px solid #D97706',
+              letterSpacing: '0.02em',
+            }}
+            title="Telemetry data is synthetically simulated for training and testing. No physical CAN-bus device is connected."
+          >
+            SIMULATED J1939
           </span>
 
           <span
@@ -238,7 +276,7 @@ export default function TelemetryHUD({
                 fontSize: '0.75rem',
                 padding: '2px 6px',
                 backgroundColor: pressurePsi > 4800 ? '#FEE2E2' : 'var(--color-white)',
-                color: pressurePsi > 4800 ? 'var(--color-vermilion)' : 'var(--color-ink)',
+                color: pressurePsi > 4800 ? '#8F1D05' : 'var(--color-ink)',
                 border: '1px solid var(--color-ink)',
                 fontWeight: 600,
               }}
@@ -276,18 +314,39 @@ export default function TelemetryHUD({
           </div>
         </div>
 
-        {/* Toggle HUD Button */}
+        {/* Toggle HUD Button & 3D Twin Link */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            type="button"
+            onClick={() => window.open(`/twin?equipment=${encodeURIComponent(equipment)}`, '_blank')}
+            className="btn btn-hazard"
+            style={{
+              minHeight: '44px',
+              padding: '10px 14px',
+              fontSize: '0.78rem',
+              fontFamily: 'var(--font-mono)',
+              fontWeight: 700,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+            title="Launch 3D Exploded Digital Twin & Subsystem Storyline"
+          >
+            <span>◈ 3D TWIN ↗</span>
+          </button>
+
           <button
             type="button"
             onClick={() => setExpanded(!expanded)}
             className="paper-button"
             style={{
-              padding: '4px 10px',
-              fontSize: '0.75rem',
+              minHeight: '44px',
+              minWidth: '44px',
+              padding: '10px 14px',
+              fontSize: '0.78rem',
               fontFamily: 'var(--font-mono)',
               fontWeight: 700,
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
             }}
@@ -352,7 +411,7 @@ export default function TelemetryHUD({
                       letterSpacing: '0.08em',
                     }}
                   >
-                    DIAGNOSTIC VECTOR SCHEMATIC · SYSTEM BUS 1939
+                    DIAGNOSTIC VECTOR SCHEMATIC · J1939 SYNTHETIC HARNESS (SIMULATED TELEMETRY)
                   </div>
                   <div
                     style={{
@@ -362,7 +421,7 @@ export default function TelemetryHUD({
                       color: '#EFE8D8',
                     }}
                   >
-                    {equipment.toUpperCase()} CAD SCHEMATIC
+                    {equipment.toUpperCase()} CAD SCHEMATIC [SIMULATED]
                   </div>
                 </div>
 
@@ -380,8 +439,81 @@ export default function TelemetryHUD({
                 </div>
               </div>
 
-              {/* Vector Machinery Illustration & Clickable Subsystem Nodes */}
-              <div style={{ position: 'relative', width: '100%', height: '180px' }}>
+              {/* View Mode Selector: 2D Vector CAD vs 3D Digital Twin */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  marginBottom: '10px',
+                  position: 'relative',
+                  zIndex: 2,
+                  flexWrap: 'wrap',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setViewMode('2d')}
+                  className={`btn ${viewMode === '2d' ? 'btn-hazard' : ''}`}
+                  style={{ padding: '3px 8px', fontSize: '0.68rem' }}
+                >
+                  2D VECTOR CAD
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('3d')}
+                  className={`btn ${viewMode === '3d' ? 'btn-hazard' : ''}`}
+                  style={{ padding: '3px 8px', fontSize: '0.68rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                >
+                  <span>◈ 3D DIGITAL TWIN</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => window.open(`/twin?equipment=${encodeURIComponent(equipment)}`, '_blank')}
+                  className="btn"
+                  style={{ padding: '3px 8px', fontSize: '0.68rem', marginLeft: 'auto' }}
+                  title="Open dedicated 3D Digital Twin & Exploded Subsystem Storyline"
+                >
+                  FULLSCREEN 3D ↗
+                </button>
+              </div>
+
+              {/* View Mode Content: 3D Canvas or 2D Vector Schematic */}
+              {viewMode === '3d' ? (
+                <div
+                  style={{
+                    width: '100%',
+                    height: '240px',
+                    position: 'relative',
+                    border: '1px solid rgba(120, 200, 220, 0.4)',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <DigitalTwinCanvas
+                    freeOrbitMode={true}
+                    renderMode="cad"
+                    activeFaultId={faultSubsystem === 'BOOM_CYLINDER' ? 'BOOM_CYLINDER' : 'DIESEL_ENGINE'}
+                    isResolved={isResolved}
+                    explodedAmount={0.7}
+                    cameraPreset="iso"
+                  />
+                  <div
+                    className="mono"
+                    style={{
+                      position: 'absolute',
+                      bottom: '6px',
+                      left: '8px',
+                      fontSize: '0.65rem',
+                      color: 'rgba(255, 255, 255, 0.6)',
+                      pointerEvents: 'none',
+                    }}
+                  >
+                    3D EXPLODED CAD ACTIVE · DRAG TO ORBIT
+                  </div>
+                </div>
+              ) : (
+                /* Vector Machinery Illustration & Clickable Subsystem Nodes */
+                <div style={{ position: 'relative', width: '100%', height: '180px' }}>
                 <svg
                   viewBox="0 0 400 190"
                   style={{ width: '100%', height: '100%', overflow: 'visible' }}
@@ -431,32 +563,60 @@ export default function TelemetryHUD({
                     <polygon points="340,145 365,160 355,175 330,165" stroke="rgba(120, 200, 220, 0.9)" fill="rgba(30, 60, 70, 0.5)" />
                   </g>
 
-                  {/* Pulsing Concentric Radar Rings on Fault Node */}
+                  {/* Concentric Radar Rings on Fault Node (Animated by default, Static in reduced-motion) */}
                   {!isResolved && (
-                    <g>
-                      <circle
-                        cx={activeFaultNode.cx}
-                        cy={activeFaultNode.cy}
-                        r="18"
-                        fill="none"
-                        stroke="#EF4444"
-                        strokeWidth="1.5"
-                        opacity="0.8"
-                      >
-                        <animate attributeName="r" values="8;24;32" dur="1.8s" repeatCount="indefinite" />
-                        <animate attributeName="opacity" values="0.9;0.4;0" dur="1.8s" repeatCount="indefinite" />
-                      </circle>
-                      <circle
-                        cx={activeFaultNode.cx}
-                        cy={activeFaultNode.cy}
-                        r="10"
-                        fill="none"
-                        stroke="#F59E0B"
-                        strokeWidth="1.5"
-                      >
-                        <animate attributeName="r" values="6;16" dur="1.2s" repeatCount="indefinite" />
-                        <animate attributeName="opacity" values="1;0.2" dur="1.2s" repeatCount="indefinite" />
-                      </circle>
+                    <g aria-hidden="true">
+                      {prefersReducedMotion ? (
+                        /* Static high-contrast tactical reticle indicator for reduced-motion */
+                        <>
+                          <circle
+                            cx={activeFaultNode.cx}
+                            cy={activeFaultNode.cy}
+                            r="20"
+                            fill="none"
+                            stroke="#EF4444"
+                            strokeWidth="1.5"
+                            strokeDasharray="4 2"
+                            opacity="0.85"
+                          />
+                          <circle
+                            cx={activeFaultNode.cx}
+                            cy={activeFaultNode.cy}
+                            r="11"
+                            fill="none"
+                            stroke="#F59E0B"
+                            strokeWidth="1.5"
+                            opacity="0.9"
+                          />
+                        </>
+                      ) : (
+                        /* Continuous concentric animated radar rings for default motion */
+                        <>
+                          <circle
+                            cx={activeFaultNode.cx}
+                            cy={activeFaultNode.cy}
+                            r="18"
+                            fill="none"
+                            stroke="#EF4444"
+                            strokeWidth="1.5"
+                            opacity="0.8"
+                          >
+                            <animate attributeName="r" values="8;24;32" dur="1.8s" repeatCount="indefinite" />
+                            <animate attributeName="opacity" values="0.9;0.4;0" dur="1.8s" repeatCount="indefinite" />
+                          </circle>
+                          <circle
+                            cx={activeFaultNode.cx}
+                            cy={activeFaultNode.cy}
+                            r="10"
+                            fill="none"
+                            stroke="#F59E0B"
+                            strokeWidth="1.5"
+                          >
+                            <animate attributeName="r" values="6;16" dur="1.2s" repeatCount="indefinite" />
+                            <animate attributeName="opacity" values="1;0.2" dur="1.2s" repeatCount="indefinite" />
+                          </circle>
+                        </>
+                      )}
                     </g>
                   )}
 
@@ -464,21 +624,62 @@ export default function TelemetryHUD({
                   {activeNodes.map((node) => {
                     const isFault = node.id === faultSubsystem && !isResolved;
                     const isSelected = selectedSubsystem?.id === node.id;
+                    const isFocused = focusedNodeId === node.id;
                     const fillColor = isFault ? '#EF4444' : isResolved ? '#10B981' : '#0EA5E9';
+                    const accessibleStatus = isFault ? 'Fault detected' : isResolved ? 'Resolved' : node.status || 'Nominal';
 
                     return (
                       <g
                         key={node.id}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Subsystem: ${node.label}. Status: ${accessibleStatus}. Spec: ${node.spec}.`}
+                        aria-pressed={isSelected}
                         onClick={() => handleNodeClick(node)}
-                        style={{ cursor: 'pointer' }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleNodeClick(node);
+                          }
+                        }}
+                        onFocus={() => setFocusedNodeId(node.id)}
+                        onBlur={() => setFocusedNodeId(null)}
+                        style={{
+                          cursor: 'pointer',
+                          outline: 'none',
+                        }}
                       >
-                        {/* Outer hit target */}
+                        {/* Mechanical Reticle for Keyboard Focus / Selected State */}
+                        {(isFocused || isSelected) && (
+                          <rect
+                            x={node.cx - 13}
+                            y={node.cy - 13}
+                            width="26"
+                            height="26"
+                            fill="none"
+                            stroke="#F2B705"
+                            strokeWidth={isFocused ? '2' : '1.2'}
+                            strokeDasharray={isFocused ? '4 2' : 'none'}
+                            style={{ pointerEvents: 'none' }}
+                          />
+                        )}
+
+                        {/* 44px Accessible Touch Target (invisible hit area) */}
                         <circle
                           cx={node.cx}
                           cy={node.cy}
-                          r={isSelected ? '9' : '7'}
+                          r="22"
+                          fill="transparent"
+                          style={{ pointerEvents: 'all' }}
+                        />
+
+                        {/* Outer visible reticle */}
+                        <circle
+                          cx={node.cx}
+                          cy={node.cy}
+                          r={isSelected || isFocused ? '9' : '7'}
                           fill={fillColor}
-                          stroke="#FFFFFF"
+                          stroke={isFocused ? '#F2B705' : '#FFFFFF'}
                           strokeWidth="2"
                         />
                         {/* Inner pinpoint */}
@@ -488,10 +689,10 @@ export default function TelemetryHUD({
                         <text
                           x={node.cx + 10}
                           y={node.cy - 6}
-                          fill={isSelected ? '#F2B705' : '#EFE8D8'}
+                          fill={isSelected || isFocused ? '#F2B705' : '#EFE8D8'}
                           fontSize="9.5"
                           fontFamily="IBM Plex Mono"
-                          fontWeight={isSelected ? 'bold' : 'normal'}
+                          fontWeight={isSelected || isFocused ? 'bold' : 'normal'}
                         >
                           {node.label}
                         </text>
@@ -508,14 +709,14 @@ export default function TelemetryHUD({
                       bottom: '8px',
                       left: '8px',
                       right: '8px',
-                      backgroundColor: 'rgba(20, 32, 31, 0.94)',
-                      border: '1px solid #F2B705',
+                      backgroundColor: 'var(--color-dark-panel)',
+                      border: '2px solid var(--color-hazard)',
                       padding: '8px 12px',
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
                       zIndex: 10,
-                      backdropFilter: 'blur(4px)',
+                      boxShadow: 'var(--shadow-hard)',
                       flexWrap: 'wrap',
                       gap: '8px',
                     }}
@@ -523,29 +724,27 @@ export default function TelemetryHUD({
                     <div>
                       <div
                         className="mono"
-                        style={{ fontSize: '0.75rem', fontWeight: 700, color: '#F2B705' }}
+                        style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-hazard)' }}
                       >
                         INSPECTING: {selectedSubsystem.label.toUpperCase()}
                       </div>
                       <div
-                        style={{ fontSize: '0.74rem', color: '#EFE8D8', marginTop: '2px' }}
+                        style={{ fontSize: '0.74rem', color: 'var(--color-bone)', marginTop: '2px' }}
                       >
                         {selectedSubsystem.desc} · <span className="mono">{selectedSubsystem.spec}</span>
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '6px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       {onDispatchInquiry && (
                         <button
                           type="button"
                           onClick={handleInquiryBroadcast}
-                          className="paper-button"
+                          className="btn btn-hazard"
                           style={{
-                            padding: '3px 8px',
-                            fontSize: '0.72rem',
-                            backgroundColor: '#E4421E',
-                            color: '#FFFFFF',
-                            borderColor: '#FFFFFF',
+                            minHeight: '44px',
+                            padding: '8px 14px',
+                            fontSize: '0.74rem',
                             fontFamily: 'var(--font-mono)',
                           }}
                         >
@@ -555,12 +754,11 @@ export default function TelemetryHUD({
                       <button
                         type="button"
                         onClick={() => setSelectedSubsystem(null)}
+                        aria-label="Close inspection overlay"
+                        className="btn-icon-dismiss"
                         style={{
-                          background: 'none',
-                          border: 'none',
-                          color: '#9CA3AF',
-                          cursor: 'pointer',
-                          fontSize: '1rem',
+                          color: 'var(--color-paper-muted)',
+                          fontSize: '1.1rem',
                         }}
                       >
                         ✕
@@ -569,6 +767,7 @@ export default function TelemetryHUD({
                   </div>
                 )}
               </div>
+              )}
 
               {/* Instructions banner */}
               <div
@@ -606,10 +805,12 @@ export default function TelemetryHUD({
                   paddingBottom: '4px',
                   display: 'flex',
                   justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '4px',
                 }}
               >
-                <span>CAN-BUS GAUGES</span>
-                <span>RATE: 250 KBPS</span>
+                <span>CAN-BUS GAUGES (SIMULATED J1939)</span>
+                <span>RATE: 250 KBPS [SYNTHETIC]</span>
               </div>
 
               {/* Hydraulic Pressure Gauge */}
@@ -623,11 +824,11 @@ export default function TelemetryHUD({
                     marginBottom: '3px',
                   }}
                 >
-                  <span style={{ fontWeight: 700 }}>HYDRAULIC PRESSURE</span>
+                  <span style={{ fontWeight: 700 }}>HYDRAULIC PRESSURE (SIM)</span>
                   <span
                     style={{
                       fontWeight: 800,
-                      color: pressurePsi > 4800 ? 'var(--color-vermilion)' : 'var(--color-ink)',
+                      color: pressurePsi > 4800 ? '#8F1D05' : 'var(--color-ink)',
                     }}
                   >
                     {pressurePsi} PSI
@@ -651,8 +852,8 @@ export default function TelemetryHUD({
                         pressurePsi > 4800
                           ? 'var(--color-vermilion)'
                           : pressurePsi > 4000
-                          ? 'var(--color-hazard)'
-                          : 'var(--color-teal)',
+                            ? 'var(--color-hazard)'
+                            : 'var(--color-teal)',
                       transition: 'width 0.4s ease',
                     }}
                   />
@@ -682,7 +883,7 @@ export default function TelemetryHUD({
                   <span>0</span>
                   <span>2,000</span>
                   <span>4,000</span>
-                  <span style={{ color: 'var(--color-vermilion)', fontWeight: 700 }}>6,000 MAX</span>
+                  <span style={{ color: '#8F1D05', fontWeight: 700 }}>6,000 MAX</span>
                 </div>
               </div>
 
@@ -697,11 +898,11 @@ export default function TelemetryHUD({
                     marginBottom: '3px',
                   }}
                 >
-                  <span style={{ fontWeight: 700 }}>COOLANT & SLEW TEMP</span>
+                  <span style={{ fontWeight: 700 }}>COOLANT & SLEW TEMP (SIM)</span>
                   <span
                     style={{
                       fontWeight: 800,
-                      color: tempCelsius > 100 ? 'var(--color-vermilion)' : 'var(--color-ink)',
+                      color: tempCelsius > 100 ? '#8F1D05' : 'var(--color-ink)',
                     }}
                   >
                     {tempCelsius}°C
@@ -724,8 +925,8 @@ export default function TelemetryHUD({
                         tempCelsius > 102
                           ? 'var(--color-vermilion)'
                           : tempCelsius > 90
-                          ? 'var(--color-hazard)'
-                          : 'var(--color-teal)',
+                            ? 'var(--color-hazard)'
+                            : 'var(--color-teal)',
                       transition: 'width 0.4s ease',
                     }}
                   />
@@ -760,7 +961,7 @@ export default function TelemetryHUD({
                   style={{
                     fontSize: '0.68rem',
                     fontWeight: 700,
-                    color: isResolved ? 'var(--color-teal)' : 'var(--color-vermilion)',
+                    color: isResolved ? 'var(--color-teal)' : '#8F1D05',
                   }}
                 >
                   {isResolved ? 'ACTIVE DTC: NONE · ALL MONITORS OK' : 'ACTIVE DTC: SPN 1087 / FMI 01'}
@@ -776,6 +977,18 @@ export default function TelemetryHUD({
                   {isResolved
                     ? 'CAN-Bus cleared. Hydraulic pressure restored to safe baseline.'
                     : 'HYDRAULIC CIRCUIT PRESSURE EXCEEDED RELIEF THRESHOLD'}
+                </div>
+                <div
+                  className="mono"
+                  style={{
+                    fontSize: '0.60rem',
+                    color: 'var(--color-ink-muted)',
+                    borderTop: '1px dashed rgba(0,0,0,0.2)',
+                    paddingTop: '4px',
+                    marginTop: '4px',
+                  }}
+                >
+                  ⚠ SIMULATED HARNESS: Synthetic J1939 broadcast frames. No physical CAN hardware attached.
                 </div>
               </div>
             </div>

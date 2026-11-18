@@ -1,0 +1,121 @@
+{
+  "timestamp": "2026-11-15T22:19:17.046Z",
+  "journeys": [
+    {
+      "journey": "Journey 1",
+      "name": "Login Gate Rendering",
+      "passed": true,
+      "details": "Dual company dispatch grid rendered (Northwind & Kestrel)"
+    },
+    {
+      "journey": "Journey 1",
+      "name": "Cryptographic Session Token Issuance",
+      "passed": true,
+      "details": "Session: rr_sess_..."
+    },
+    {
+      "journey": "Journey 2",
+      "name": "Operator Console Mount & Header",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "journey": "Journey 2",
+      "name": "Dispatch Requisition Form Interactive",
+      "passed": true,
+      "details": "Severity radios & submit button ready"
+    },
+    {
+      "journey": "Journey 3",
+      "name": "Triage Board 3-Column Layout",
+      "passed": true,
+      "details": "Critical, Serious, Minor columns loaded"
+    },
+    {
+      "journey": "Journey 3",
+      "name": "Incident Search & Metric Cards",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "journey": "Journey 4",
+      "name": "Same-Tenant Incident Access (Authorized)",
+      "passed": true,
+      "details": "Room loaded cleanly"
+    },
+    {
+      "journey": "Journey 4",
+      "name": "Cross-Tenant Access Denial (Protocol 403)",
+      "passed": true,
+      "details": "Server & client boundary enforced"
+    },
+    {
+      "journey": "Journey 5",
+      "name": "Escalation to VOICE Rung",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "journey": "Journey 5",
+      "name": "Escalation to VIDEO Rung",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "journey": "Journey 5",
+      "name": "De-escalation back to CHAT Rung",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "journey": "Journey 6",
+      "name": "AI Co-Pilot Modal & 3 Tab Panels",
+      "passed": true,
+      "details": "4 diagnostic panels verified"
+    },
+    {
+      "journey": "Journey 6",
+      "name": "Modal Escape Key Dismissal & Focus Restoration",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "journey": "Journey 7",
+      "name": "FORM-RR-808 Service Report Layout",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "journey": "Journey 7",
+      "name": "Physical Seal & Audit Narrative Rendered",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "journey": "Journey 8",
+      "name": "Three.js 3D Canvas Mounting & WebGL Context",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "journey": "Journey 8",
+      "name": "PBR / CAD / X-Ray Shader Switchers Active",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "journey": "Journey 8",
+      "name": "Story Scroll & Free Orbit Mode Controls",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "journey": "Journey 9",
+      "name": "Session Storage Purge & Clean Redirect",
+      "passed": true,
+      "details": "Storage purged, redirected to /login"
+    }
+  ],
+  "passedCount": 19,
+  "failedCount": 0
+}

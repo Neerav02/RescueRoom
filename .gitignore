@@ -27,3 +27,11 @@ dist-ssr
 .env
 .env.*
 !.env.example
+
+# Staging / Local TLS Certificates
+server/certs/*.pem
+server/certs/*.key
+
+# Scratch & Temporary Test Harnesses
+scratch/
+.impeccable/

@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   analyzeEvidencePlate,
   formatAiBroadcastMessage,
   getGeminiApiKey,
   setGeminiApiKey,
-  MACHINERY_CATALOG,
 } from '../lib/gemini';
 
 /**
@@ -21,18 +20,80 @@ export default function AiCopilotModal({
   guid = '',
   onBroadcastToChat = null,
 }) {
+  const dialogRef = useRef(null);
+  const previousFocusRef = useRef(null);
+
   const [activeTab, setActiveTab] = useState('DIAGNOSTICS'); // 'DIAGNOSTICS' | 'LOTO' | 'TORQUE' | 'SETTINGS'
   const [loading, setLoading] = useState(false);
   const [diagnosis, setDiagnosis] = useState(null);
   const [checkedLoto, setCheckedLoto] = useState({});
-  const [customKeyInput, setCustomKeyInput] = useState('');
+  const [customKeyInput, setCustomKeyInput] = useState(() => getGeminiApiKey());
   const [keySavedStatus, setKeySavedStatus] = useState(false);
   const [copiedPart, setCopiedPart] = useState(null);
 
-  // Initialize key input on mount
+  // Focus management, focus trap, and Escape key listener for accessible modal dialog
   useEffect(() => {
-    setCustomKeyInput(getGeminiApiKey());
-  }, [isOpen]);
+    if (isOpen) {
+      previousFocusRef.current = document.activeElement;
+
+      // Move focus into the dialog once mounted
+      const focusTimer = setTimeout(() => {
+        if (!dialogRef.current) return;
+        const focusable = dialogRef.current.querySelectorAll(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length > 0) {
+          focusable[0].focus();
+        } else {
+          dialogRef.current.focus();
+        }
+      }, 50);
+
+      const handleKeyDown = (e) => {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          e.stopPropagation();
+          onClose();
+          return;
+        }
+
+        if (e.key === 'Tab') {
+          if (!dialogRef.current) return;
+          const focusable = dialogRef.current.querySelectorAll(
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          );
+          if (focusable.length === 0) {
+            e.preventDefault();
+            return;
+          }
+          const first = focusable[0];
+          const last = focusable[focusable.length - 1];
+
+          if (e.shiftKey) {
+            if (document.activeElement === first || !dialogRef.current.contains(document.activeElement)) {
+              e.preventDefault();
+              last.focus();
+            }
+          } else {
+            if (document.activeElement === last || !dialogRef.current.contains(document.activeElement)) {
+              e.preventDefault();
+              first.focus();
+            }
+          }
+        }
+      };
+
+      document.addEventListener('keydown', handleKeyDown);
+
+      return () => {
+        clearTimeout(focusTimer);
+        document.removeEventListener('keydown', handleKeyDown);
+        if (previousFocusRef.current && typeof previousFocusRef.current.focus === 'function') {
+          previousFocusRef.current.focus();
+        }
+      };
+    }
+  }, [isOpen, onClose]);
 
   // Run or refresh diagnosis when modal opens or target plate changes
   useEffect(() => {
@@ -46,7 +107,7 @@ export default function AiCopilotModal({
           imageUrl: targetPlateUrl,
           fileData: targetPlateFile,
           equipment,
-          incidentDescription: incidentMeta.description || '',
+          incidentDescription: incidentMeta?.description || '',
           incidentGuid: guid,
         });
         if (isMounted) {
@@ -63,7 +124,7 @@ export default function AiCopilotModal({
     return () => {
       isMounted = false;
     };
-  }, [isOpen, targetPlateUrl, equipment]);
+  }, [isOpen, targetPlateUrl, targetPlateFile, equipment, guid, incidentMeta?.description]);
 
   if (!isOpen) return null;
 
@@ -112,8 +173,7 @@ export default function AiCopilotModal({
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'rgba(28, 27, 24, 0.78)',
-        backdropFilter: 'blur(3px)',
+        backgroundColor: 'rgba(28, 27, 24, 0.85)',
         zIndex: 99999,
         display: 'flex',
         alignItems: 'center',
@@ -125,6 +185,12 @@ export default function AiCopilotModal({
       }}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="copilot-modal-title"
+        aria-describedby="copilot-modal-desc"
+        tabIndex={-1}
         className="paper-card"
         style={{
           width: '100%',
@@ -138,8 +204,13 @@ export default function AiCopilotModal({
           padding: 0,
           overflow: 'hidden',
           animation: 'fadeIn 0.15s ease-out',
+          outline: 'none',
         }}
       >
+        <p id="copilot-modal-desc" className="sr-only">
+          {`Visual damage forensics, OEM parts lookup, and LOTO safety verification for ${equipment}`}
+        </p>
+
         {/* Header Bar */}
         <div
           style={{
@@ -165,29 +236,30 @@ export default function AiCopilotModal({
             >
               RESCUE-AI
             </span>
-            <span
+            <h2
+              id="copilot-modal-title"
               style={{
                 fontFamily: 'var(--font-heading)',
                 fontSize: '1rem',
                 fontWeight: 800,
                 letterSpacing: '0.02em',
+                margin: 0,
+                color: 'var(--color-bone)',
               }}
             >
               MACHINERY CO-PILOT · FORENSICS & PARTS DECODER
-            </span>
+            </h2>
           </div>
 
           <button
             type="button"
             onClick={onClose}
+            aria-label="Close Co-Pilot Window"
+            className="btn-icon-dismiss"
             style={{
-              backgroundColor: 'transparent',
-              border: 'none',
               color: 'var(--color-bone)',
               fontSize: '1.2rem',
-              cursor: 'pointer',
               fontWeight: 700,
-              padding: '2px 8px',
             }}
             title="Close Co-Pilot Window"
           >
@@ -215,6 +287,7 @@ export default function AiCopilotModal({
               type="button"
               onClick={() => setActiveTab(tab.id)}
               style={{
+                minHeight: '44px',
                 padding: '10px 16px',
                 border: 'none',
                 borderRight: 'var(--border-ink-thin)',
@@ -244,9 +317,9 @@ export default function AiCopilotModal({
               color: 'var(--color-ink-muted)',
             }}
           >
-            {getGeminiApiKey() ? (
+            {diagnosis?.source === 'GOOGLE_GEMINI_2_5_FLASH' ? (
               <span style={{ color: 'var(--color-teal)', fontWeight: 700 }}>
-                ● GEMINI 2.5 FLASH ACTIVE
+                ● GEMINI 2.5 FLASH ACTIVE (SERVER PROXIED)
               </span>
             ) : (
               <span style={{ color: 'var(--color-ink)', fontWeight: 600 }}>
@@ -340,6 +413,7 @@ export default function AiCopilotModal({
                           <img
                             src={targetPlateUrl}
                             alt="Evidence Specimen"
+                            loading="lazy"
                             style={{
                               width: '100%',
                               height: '100%',
@@ -723,21 +797,22 @@ export default function AiCopilotModal({
                     }}
                   >
                     <h4 style={{ marginBottom: '8px', fontSize: '0.9rem' }}>
-                      GOOGLE GEMINI 2.5 FLASH API INTEGRATION
+                      GOOGLE GEMINI 2.5 FLASH API INTEGRATION (SECURE SERVER PROXY)
                     </h4>
                     <p style={{ fontSize: '0.8rem', lineHeight: 1.4, color: 'var(--color-ink-muted)', marginBottom: '12px' }}>
-                      RescueRoom uses <strong>Google Gemini 2.5 Flash</strong> for real-time multimodal failure diagnosis and part recommendations.
-                      If no key is entered, RescueRoom uses its built-in <strong>Tactical Machinery Heuristic Engine</strong> with full offline catalog data.
+                      RescueRoom routes multimodal failure forensics through the secure backend proxy (<code>/api/gemini/analyze</code>).
+                      Production credentials (<code>GEMINI_API_KEY</code>) are maintained strictly on the server and are never exposed to browser bundles.
+                      If no key is configured on the server, RescueRoom engages its built-in <strong>Tactical Machinery Heuristic Engine</strong> with full offline OEM catalog data.
                     </p>
 
                     <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: '0.74rem', fontWeight: 700, marginBottom: '4px' }}>
-                      GEMINI API KEY:
+                      DEV / SESSION OVERRIDE KEY (OPTIONAL):
                     </label>
                     <input
                       type="password"
                       value={customKeyInput}
                       onChange={(e) => setCustomKeyInput(e.target.value)}
-                      placeholder="AIzaSy..."
+                      placeholder="Leave blank to use server environment GEMINI_API_KEY"
                       style={{
                         width: '100%',
                         padding: '8px 10px',
@@ -769,7 +844,7 @@ export default function AiCopilotModal({
                           className="mono"
                           style={{ fontSize: '0.75rem', color: 'var(--color-teal)', fontWeight: 700 }}
                         >
-                          KEY STORED SUCCESSFULLY ✓
+                          SESSION CONFIGURATION UPDATED ✓
                         </span>
                       )}
                     </div>

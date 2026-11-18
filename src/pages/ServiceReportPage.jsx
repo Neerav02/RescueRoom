@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { CometChat, ensureUserLoggedIn } from '../lib/cometchat';
 import { TelemetryHUD } from '../components';
@@ -12,6 +12,71 @@ export default function ServiceReportPage({ currentUser }) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [lightboxUrl, setLightboxUrl] = useState(null);
+  const [now] = useState(() => Date.now());
+
+  const lightboxRef = useRef(null);
+  const lightboxTriggerRef = useRef(null);
+
+  // Focus management, focus trap, and Escape key listener for accessible Service Report Lightbox
+  useEffect(() => {
+    if (lightboxUrl) {
+      const focusTimer = setTimeout(() => {
+        if (!lightboxRef.current) return;
+        const focusable = lightboxRef.current.querySelectorAll(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length > 0) {
+          focusable[0].focus();
+        } else {
+          lightboxRef.current.focus();
+        }
+      }, 50);
+
+      const handleKeyDown = (e) => {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          e.stopPropagation();
+          setLightboxUrl(null);
+          return;
+        }
+
+        if (e.key === 'Tab') {
+          if (!lightboxRef.current) return;
+          const focusable = lightboxRef.current.querySelectorAll(
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          );
+          if (focusable.length === 0) {
+            e.preventDefault();
+            return;
+          }
+          const first = focusable[0];
+          const last = focusable[focusable.length - 1];
+
+          if (e.shiftKey) {
+            if (document.activeElement === first || !lightboxRef.current.contains(document.activeElement)) {
+              e.preventDefault();
+              last.focus();
+            }
+          } else {
+            if (document.activeElement === last || !lightboxRef.current.contains(document.activeElement)) {
+              e.preventDefault();
+              first.focus();
+            }
+          }
+        }
+      };
+
+      document.addEventListener('keydown', handleKeyDown);
+
+      return () => {
+        clearTimeout(focusTimer);
+        document.removeEventListener('keydown', handleKeyDown);
+        if (lightboxTriggerRef.current && typeof lightboxTriggerRef.current.focus === 'function') {
+          lightboxTriggerRef.current.focus();
+        }
+      };
+    }
+  }, [lightboxUrl]);
 
   // Fetch group metadata and entire message history
   useEffect(() => {
@@ -56,8 +121,8 @@ export default function ServiceReportPage({ currentUser }) {
   }
 
   const isResolved = metadata.status === 'resolved' || Boolean(localResolved);
-  const openedAt = Number(metadata.openedAt) || Date.now() - 3600000;
-  const resolvedAt = metadata.resolvedAt ? Number(metadata.resolvedAt) : localResolved?.resolvedAt || (isResolved ? Date.now() : null);
+  const openedAt = Number(metadata.openedAt) || now - 3600000;
+  const resolvedAt = metadata.resolvedAt ? Number(metadata.resolvedAt) : localResolved?.resolvedAt || (isResolved ? now : null);
   const resolvedBy = metadata.resolvedBy || localResolved?.resolvedBy || 'TECH-LEAD';
   const resolvedByName = metadata.resolvedByName || localResolved?.resolvedByName || 'Maintenance Lead';
   const equipment = metadata.equipment || group?.getName() || 'HEAVY EQUIPMENT';
@@ -92,7 +157,7 @@ export default function ServiceReportPage({ currentUser }) {
   // Total Downtime
   const downtimeSec = resolvedAt
     ? Math.max(0, Math.floor((resolvedAt - openedAt) / 1000))
-    : Math.max(0, Math.floor((Date.now() - openedAt) / 1000));
+    : Math.max(0, Math.floor((now - openedAt) / 1000));
 
   const formatDuration = (sec) => {
     const hrs = String(Math.floor(sec / 3600)).padStart(2, '0');
@@ -147,9 +212,9 @@ export default function ServiceReportPage({ currentUser }) {
               PROTOCOL 403 // TENANT ISOLATION ENFORCED
             </span>
           </div>
-          <h2 style={{ fontSize: '1.8rem', margin: '14px 0 8px' }}>
+          <h1 style={{ fontSize: '1.8rem', margin: '14px 0 8px' }}>
             UNAUTHORIZED SERVICE REPORT ARCHIVE
-          </h2>
+          </h1>
           <p
             className="mono"
             style={{
@@ -181,7 +246,8 @@ export default function ServiceReportPage({ currentUser }) {
   return (
     <div style={{ width: '100%', flex: 1, padding: '24px 32px 64px' }}>
       <div style={{ maxWidth: '1080px', margin: '0 auto' }}>
-        {/* Top No-Print Control Bar */}
+        <div inert={lightboxUrl ? '' : undefined} style={{ width: '100%' }}>
+          {/* Top No-Print Control Bar */}
         <div
           className="no-print"
           style={{
@@ -210,12 +276,22 @@ export default function ServiceReportPage({ currentUser }) {
             >
               TRIAGE BOARD
             </button>
+            <button
+              onClick={() => window.open(`/twin?equipment=${encodeURIComponent(incident?.equipment || 'Excavator EX-204')}`, '_blank')}
+              className="btn"
+              style={{ fontSize: '0.78rem', padding: '8px 14px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+              title="Inspect 3D Digital Twin & mechanical clearance record"
+            >
+              <span style={{ color: 'var(--color-cad-active)' }}>◈</span>
+              <span>3D DIGITAL TWIN ↗</span>
+            </button>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <button
+              type="button"
               onClick={() => window.print()}
-              className="btn btn-vermilion"
+              className="btn btn-hazard"
               style={{ fontSize: '0.85rem', padding: '10px 22px', fontWeight: 800 }}
               title="Open browser print dialog / export to physical PDF document"
             >
@@ -226,7 +302,7 @@ export default function ServiceReportPage({ currentUser }) {
 
         {/* The Printable Service Report Sheet */}
         {loading ? (
-          <div className="paper-card mono" style={{ textAlign: 'center', padding: '60px' }}>
+          <div className="report-sheet paper-card mono" style={{ textAlign: 'center', minHeight: '600px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px' }}>
             RECONSTRUCTING INCIDENT TELEMETRY & COMETCHAT AUDIT TRAIL...
           </div>
         ) : (
@@ -343,7 +419,7 @@ export default function ServiceReportPage({ currentUser }) {
                 <span className="mono" style={{ fontSize: '0.66rem', color: 'var(--color-ink-muted)' }}>
                   TOTAL DOWNTIME DURATION
                 </span>
-                <span className="mono" style={{ fontSize: '1.45rem', fontWeight: 800, color: severity === 'CRITICAL' ? 'var(--color-vermilion)' : 'var(--color-ink)', marginTop: '4px' }}>
+                <span className="mono" style={{ fontSize: '1.45rem', fontWeight: 800, color: severity === 'CRITICAL' ? '#8F1D05' : 'var(--color-ink)', marginTop: '4px' }}>
                   {formatDuration(downtimeSec)}
                 </span>
                 <span className="mono" style={{ fontSize: '0.62rem', color: 'var(--color-ink-muted)', marginTop: '2px' }}>
@@ -378,9 +454,9 @@ export default function ServiceReportPage({ currentUser }) {
 
             {/* Template-based Plain Language Diagnostic Narrative (Prompt 8) */}
             <div style={{ marginBottom: '32px' }}>
-              <h3 style={{ fontSize: '1.15rem', borderBottom: 'var(--border-ink)', paddingBottom: '6px', marginBottom: '12px' }}>
+              <h2 style={{ fontSize: '1.15rem', borderBottom: 'var(--border-ink)', paddingBottom: '6px', marginBottom: '12px' }}>
                 TECHNICAL DIAGNOSTIC NARRATIVE & INCIDENT SUMMARY
-              </h3>
+              </h2>
               <div
                 className="mono"
                 style={{
@@ -396,15 +472,15 @@ export default function ServiceReportPage({ currentUser }) {
                 <br /><br />
                 <strong>Primary Fault Declaration:</strong> "{description}".
                 <br /><br />
-                The centralized RescueRoom triage board broadcasted the alert to {companyName} technicians. First response contact was established within <strong>{formatSecs(firstResponderSeconds)}</strong>. During the live field engagement, <strong>{evidencePlates.length} photographic evidence plates</strong> were uploaded for remote fault diagnostics. Mechanics and dispatch personnel conducted <strong>{formatSecs(callDurationSeconds || 192)}</strong> of encrypted two-way tactical voice/video consultations to isolate the mechanical failure. Corrective procedures were verified on-site, and the machinery was verified operational and closed by <strong>{resolvedByName} ({resolvedBy})</strong> at <strong>{formatUtcTime(resolvedAt || Date.now())} UTC</strong>.
+                The centralized RescueRoom triage board broadcasted the alert to {companyName} technicians. First response contact was established within <strong>{formatSecs(firstResponderSeconds)}</strong>. During the live field engagement, <strong>{evidencePlates.length} photographic evidence plates</strong> were uploaded for remote fault diagnostics. Mechanics and dispatch personnel conducted <strong>{formatSecs(callDurationSeconds || 192)}</strong> of encrypted two-way tactical voice/video consultations to isolate the mechanical failure. Corrective procedures were verified on-site, and the machinery was verified operational and closed by <strong>{resolvedByName} ({resolvedBy})</strong> at <strong>{formatUtcTime(resolvedAt || now)} UTC</strong>.
               </div>
             </div>
 
             {/* Chronological Incident Event Ledger (Prompt 8 Timeline) */}
             <div style={{ marginBottom: '32px' }}>
-              <h3 style={{ fontSize: '1.15rem', borderBottom: 'var(--border-ink)', paddingBottom: '6px', marginBottom: '16px' }}>
+              <h2 style={{ fontSize: '1.15rem', borderBottom: 'var(--border-ink)', paddingBottom: '6px', marginBottom: '16px' }}>
                 INCIDENT EVENT LEDGER (CHRONOLOGICAL AUDIT TRAIL)
-              </h3>
+              </h2>
 
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 {/* Event 1: Opened */}
@@ -474,7 +550,7 @@ export default function ServiceReportPage({ currentUser }) {
                 {isResolved && (
                   <div className="timeline-ledger-item" style={{ borderBottom: 'none' }}>
                     <span className="mono" style={{ fontSize: '0.78rem', minWidth: '105px', color: 'var(--color-teal)', fontWeight: 700 }}>
-                      [{formatUtcTime(resolvedAt || Date.now())} UTC]
+                      [{formatUtcTime(resolvedAt || now)} UTC]
                     </span>
                     <span className="stamp stamp-resolved" style={{ fontSize: '0.65rem' }}>RESOLVED</span>
                     <div>
@@ -493,9 +569,9 @@ export default function ServiceReportPage({ currentUser }) {
             {/* Embedded Evidence Plates Gallery (Prompt 8) */}
             {evidencePlates.length > 0 && (
               <div style={{ marginBottom: '36px' }}>
-                <h3 style={{ fontSize: '1.15rem', borderBottom: 'var(--border-ink)', paddingBottom: '6px', marginBottom: '16px' }}>
+                <h2 style={{ fontSize: '1.15rem', borderBottom: 'var(--border-ink)', paddingBottom: '6px', marginBottom: '16px' }}>
                   AUTHENTICATED EVIDENCE PLATE ATTACHMENTS ({evidencePlates.length})
-                </h3>
+                </h2>
 
                 <div
                   style={{
@@ -510,6 +586,9 @@ export default function ServiceReportPage({ currentUser }) {
                     return (
                       <div
                         key={idx}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Inspect evidence plate ${plateNum}`}
                         className="report-plate-item paper-card"
                         style={{
                           backgroundColor: 'var(--color-paper-light)',
@@ -517,7 +596,17 @@ export default function ServiceReportPage({ currentUser }) {
                           padding: '10px',
                           cursor: 'pointer',
                         }}
-                        onClick={() => setLightboxUrl(url)}
+                        onClick={(e) => {
+                          lightboxTriggerRef.current = e.currentTarget;
+                          setLightboxUrl(url);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            lightboxTriggerRef.current = e.currentTarget;
+                            setLightboxUrl(url);
+                          }
+                        }}
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                           <span className="stamp stamp-critical" style={{ fontSize: '0.62rem' }}>
@@ -532,6 +621,7 @@ export default function ServiceReportPage({ currentUser }) {
                           <img
                             src={url}
                             alt={plateNum}
+                            loading="lazy"
                             style={{ width: '100%', height: '160px', objectFit: 'cover', display: 'block' }}
                           />
                         </div>
@@ -548,9 +638,9 @@ export default function ServiceReportPage({ currentUser }) {
 
             {/* Section 4: CAD Schematic Diagnosis & OEM Parts Replenishment */}
             <div style={{ marginBottom: '36px' }}>
-              <h3 style={{ fontSize: '1.15rem', borderBottom: 'var(--border-ink)', paddingBottom: '6px', marginBottom: '16px' }}>
+              <h2 style={{ fontSize: '1.15rem', borderBottom: 'var(--border-ink)', paddingBottom: '6px', marginBottom: '16px' }}>
                 CAD SCHEMATIC DIAGNOSIS & REPLACEMENT PARTS MANIFEST
-              </h3>
+              </h2>
 
               <div style={{ marginBottom: '16px' }}>
                 <TelemetryHUD
@@ -646,6 +736,7 @@ export default function ServiceReportPage({ currentUser }) {
             </div>
           </div>
         )}
+        </div>
 
         {/* Full-Screen Inspection Lightbox */}
         {lightboxUrl && (
@@ -667,6 +758,11 @@ export default function ServiceReportPage({ currentUser }) {
             onClick={() => setLightboxUrl(null)}
           >
             <div
+              ref={lightboxRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="report-lightbox-title"
+              tabIndex={-1}
               className="paper-card"
               style={{
                 maxWidth: '900px',
@@ -674,18 +770,28 @@ export default function ServiceReportPage({ currentUser }) {
                 backgroundColor: 'var(--color-bone)',
                 border: 'var(--border-ink-thick)',
                 boxShadow: 'var(--shadow-hard-xl)',
+                outline: 'none',
               }}
               onClick={(e) => e.stopPropagation()}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <span className="mono" style={{ fontWeight: 800 }}>EVIDENCE PLATE INSPECTION</span>
-                <button onClick={() => setLightboxUrl(null)} className="btn btn-hazard">
+                <h2 id="report-lightbox-title" className="mono" style={{ margin: 0, fontSize: '1rem', fontWeight: 800 }}>
+                  EVIDENCE PLATE INSPECTION
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setLightboxUrl(null)}
+                  className="btn btn-hazard"
+                  aria-label="Close evidence plate inspection"
+                  style={{ minWidth: '44px', minHeight: '44px' }}
+                >
                   ✕ CLOSE
                 </button>
               </div>
               <img
                 src={lightboxUrl}
-                alt="Evidence plate"
+                alt="Evidence plate forensic inspection"
+                loading="lazy"
                 style={{ width: '100%', maxHeight: '70vh', objectFit: 'contain', border: '1px solid #000' }}
               />
             </div>

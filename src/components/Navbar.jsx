@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { logoutUser } from '../lib/cometchat';
 
 export default function Navbar({ currentUser, onLogout, onSwitchUser }) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [timeStr, setTimeStr] = useState('');
 
   useEffect(() => {
@@ -27,24 +30,9 @@ export default function Navbar({ currentUser, onLogout, onSwitchUser }) {
   };
 
   return (
-    <header
-      style={{
-        borderBottom: 'var(--border-ink-thick)',
-        backgroundColor: 'var(--color-bone)',
-        padding: '12px 24px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '16px',
-        boxShadow: '0 2px 0 var(--color-ink)',
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-      }}
-    >
+    <header className="navbar-header">
       {/* Brand & System Code */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      <div className="navbar-brand-section">
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span className="stamp stamp-critical" style={{ fontSize: '0.68rem', padding: '2px 6px' }}>
@@ -69,6 +57,9 @@ export default function Navbar({ currentUser, onLogout, onSwitchUser }) {
               fontWeight: 800,
               letterSpacing: '-0.03em',
               lineHeight: 1.1,
+              display: 'inline-flex',
+              alignItems: 'center',
+              minHeight: '44px',
             }}
           >
             RESCUEROOM
@@ -76,14 +67,7 @@ export default function Navbar({ currentUser, onLogout, onSwitchUser }) {
         </div>
 
         {currentUser && (
-          <div
-            style={{
-              borderLeft: 'var(--border-ink)',
-              paddingLeft: '14px',
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-          >
+          <div className="navbar-workspace-badge">
             <span className="mono" style={{ fontSize: '0.68rem', color: 'var(--color-ink-muted)' }}>
               ACTIVE WORKSPACE
             </span>
@@ -92,13 +76,47 @@ export default function Navbar({ currentUser, onLogout, onSwitchUser }) {
             </span>
           </div>
         )}
+
+        {currentUser && (
+          <nav className="navbar-nav-links" aria-label="Main Navigation">
+            <button
+              onClick={() => navigate('/board')}
+              className={`btn ${location.pathname === '/board' ? 'btn-hazard' : ''}`}
+              style={{ padding: '6px 10px', fontSize: '0.76rem' }}
+            >
+              TRIAGE BOARD
+            </button>
+            <button
+              onClick={() => navigate('/operator')}
+              className={`btn ${location.pathname === '/operator' ? 'btn-hazard' : ''}`}
+              style={{ padding: '6px 10px', fontSize: '0.76rem' }}
+            >
+              OPERATOR
+            </button>
+            <button
+              onClick={() => navigate('/twin')}
+              className={`btn ${location.pathname === '/twin' ? 'btn-hazard' : ''}`}
+              style={{
+                padding: '6px 10px',
+                fontSize: '0.76rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+              }}
+              title="Open 3D Exploded Digital Twin & Subsystem Inspector"
+            >
+              <span style={{ color: 'var(--color-cad-active)' }}>◈</span>
+              <span>3D DIGITAL TWIN</span>
+            </button>
+          </nav>
+        )}
       </div>
 
       {/* Clock, Status & User Controls */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
         {/* Monospace System Clock */}
         <div
-          className="paper-card"
+          className="paper-card navbar-clock-card"
           style={{
             padding: '6px 12px',
             backgroundColor: 'var(--color-paper-light)',
@@ -115,7 +133,7 @@ export default function Navbar({ currentUser, onLogout, onSwitchUser }) {
 
         {/* AI Co-Pilot Status Badge */}
         <div
-          className="paper-card"
+          className="paper-card navbar-ai-badge"
           style={{
             padding: '6px 10px',
             backgroundColor: 'var(--color-paper-light)',
@@ -134,19 +152,20 @@ export default function Navbar({ currentUser, onLogout, onSwitchUser }) {
         </div>
 
         {currentUser ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', minWidth: 0 }}>
             <div
               className="paper-card"
               style={{
-                padding: '6px 14px',
+                padding: '6px 10px',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '10px',
+                gap: '8px',
                 backgroundColor: 'var(--color-paper-light)',
+                minWidth: 0,
               }}
             >
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                   <span
                     className={`stamp ${
                       currentUser.role === 'operator'
@@ -159,7 +178,7 @@ export default function Navbar({ currentUser, onLogout, onSwitchUser }) {
                   >
                     {currentUser.role.toUpperCase()}
                   </span>
-                  <span style={{ fontWeight: 700, fontSize: '0.88rem' }}>{currentUser.name}</span>
+                  <span style={{ fontWeight: 700, fontSize: '0.85rem', wordBreak: 'break-word' }}>{currentUser.name}</span>
                 </div>
                 <div className="mono" style={{ fontSize: '0.68rem', color: 'var(--color-ink-muted)' }}>
                   CALLSIGN: {currentUser.callsign}
@@ -167,23 +186,25 @@ export default function Navbar({ currentUser, onLogout, onSwitchUser }) {
               </div>
             </div>
 
-            <button
-              onClick={onSwitchUser}
-              className="btn btn-hazard"
-              style={{ padding: '7px 12px', fontSize: '0.78rem' }}
-              title="Switch demo persona or company"
-            >
-              SWITCH USER
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+              <button
+                onClick={onSwitchUser}
+                className="btn btn-hazard"
+                style={{ padding: '6px 10px', fontSize: '0.74rem' }}
+                title="Switch demo persona or company"
+              >
+                SWITCH USER
+              </button>
 
-            <button
-              onClick={handleLogout}
-              className="btn"
-              style={{ padding: '7px 12px', fontSize: '0.78rem' }}
-              title="Log out of CometChat"
-            >
-              LOGOUT
-            </button>
+              <button
+                onClick={handleLogout}
+                className="btn"
+                style={{ padding: '6px 10px', fontSize: '0.74rem' }}
+                title="Log out of CometChat"
+              >
+                LOGOUT
+              </button>
+            </div>
           </div>
         ) : (
           <div className="mono" style={{ fontSize: '0.78rem', color: 'var(--color-ink-muted)' }}>

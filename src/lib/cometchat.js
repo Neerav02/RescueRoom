@@ -4,11 +4,11 @@
  */
 
 import { CometChat } from "@cometchat/chat-sdk-javascript";
+export { DEMO_USERS } from "./roster.js";
 
 export const COMETCHAT_CONFIG = {
   APP_ID: import.meta.env.VITE_COMETCHAT_APP_ID || "",
   REGION: (import.meta.env.VITE_COMETCHAT_REGION || "").toLowerCase(),
-  AUTH_KEY: import.meta.env.VITE_COMETCHAT_AUTH_KEY || "",
 };
 
 let initPromise = null;
@@ -25,10 +25,26 @@ export async function initCometChat() {
     return initPromise;
   }
 
-  const { APP_ID, REGION } = COMETCHAT_CONFIG;
+  let { APP_ID, REGION } = COMETCHAT_CONFIG;
+
+  // Runtime fallback: fetch public client parameters from unified server if not baked into Vite bundle
+  if (!APP_ID || !REGION) {
+    try {
+      const resp = await fetch('/api/config');
+      if (resp.ok) {
+        const cfg = await resp.json();
+        if (cfg.appId) APP_ID = cfg.appId;
+        if (cfg.region) REGION = cfg.region.toLowerCase();
+        COMETCHAT_CONFIG.APP_ID = APP_ID;
+        COMETCHAT_CONFIG.REGION = REGION;
+      }
+    } catch {
+      // ignore network errors on static hosting
+    }
+  }
 
   if (!APP_ID || !REGION) {
-    const errorMsg = "CometChat Error: Missing VITE_COMETCHAT_APP_ID or VITE_COMETCHAT_REGION in .env";
+    const errorMsg = "CometChat Error: Missing VITE_COMETCHAT_APP_ID or VITE_COMETCHAT_REGION in environment.";
     console.error(errorMsg);
     throw new Error(errorMsg);
   }
@@ -149,115 +165,131 @@ export async function safeSendMediaMessage(mediaMessage, currentUser = null) {
   }
 }
 
-/**
- * Demo Users for Multi-Tenant Isolation
- * Company 1: Northwind Heavy Equipment (Asha, Ravi, Meera)
- * Company 2: Kestrel Logistics (Dev, Sana, Imran)
- */
-export const DEMO_USERS = [
-  {
-    uid: "northwind_asha",
-    name: "Asha Patel",
-    role: "operator",
-    companyId: "northwind",
-    companyName: "Northwind Heavy Equipment",
-    callsign: "OP-NORTH-01",
-    tagline: "Heavy Excavator Lead Operator",
-  },
-  {
-    uid: "northwind_ravi",
-    name: "Ravi Kumar",
-    role: "mechanic",
-    companyId: "northwind",
-    companyName: "Northwind Heavy Equipment",
-    callsign: "TECH-NORTH-09",
-    tagline: "Hydraulics & Diesel Specialist",
-  },
-  {
-    uid: "northwind_meera",
-    name: "Meera Singh",
-    role: "dispatcher",
-    companyId: "northwind",
-    companyName: "Northwind Heavy Equipment",
-    callsign: "DISPATCH-NORTH-CENTRAL",
-    tagline: "Central Yard Operations Lead",
-  },
-  {
-    uid: "kestrel_dev",
-    name: "Dev Sharma",
-    role: "operator",
-    companyId: "kestrel",
-    companyName: "Kestrel Logistics",
-    callsign: "OP-KESTREL-04",
-    tagline: "Fleet Transport Operator",
-  },
-  {
-    uid: "kestrel_sana",
-    name: "Sana Mir",
-    role: "mechanic",
-    companyId: "kestrel",
-    companyName: "Kestrel Logistics",
-    callsign: "TECH-KESTREL-12",
-    tagline: "Electrical & Powertrain Tech",
-  },
-  {
-    uid: "kestrel_imran",
-    name: "Imran Khan",
-    role: "dispatcher",
-    companyId: "kestrel",
-    companyName: "Kestrel Logistics",
-    callsign: "DISPATCH-KESTREL-MAIN",
-    tagline: "Regional Logistics Controller",
-  },
-];
-
-/**
- * Log in a demo user. If user does not exist on CometChat, provision them first.
- */
-export async function loginOrProvisionUser(demoUser) {
-  await initCometChat();
-  const { AUTH_KEY } = COMETCHAT_CONFIG;
-  if (!AUTH_KEY) {
-    throw new Error("Missing VITE_COMETCHAT_AUTH_KEY in environment");
-  }
-
+export function getSessionToken() {
   try {
-    console.log(`[RescueRoom] Attempting login for ${demoUser.uid}...`);
-    const loggedIn = await CometChat.login(demoUser.uid, AUTH_KEY);
-    console.log(`[RescueRoom] Logged in successfully as:`, loggedIn.getName());
-    return loggedIn;
-  } catch (loginErr) {
-    console.warn(`[RescueRoom] Login failed for ${demoUser.uid}, provisioning user...`, loginErr);
-    
-    // Create the user in CometChat with standard role and role in metadata
-    try {
-      const newUser = new CometChat.User(demoUser.uid);
-      newUser.setName(demoUser.name);
-      
-      const metadata = {
-        companyId: demoUser.companyId,
-        companyName: demoUser.companyName,
-        role: demoUser.role,
-        callsign: demoUser.callsign,
-      };
-      newUser.setMetadata(metadata);
-
-      await CometChat.createUser(newUser, AUTH_KEY);
-      console.log(`[RescueRoom] Provisioned user ${demoUser.uid}. Retrying login...`);
-      const loggedIn = await CometChat.login(demoUser.uid, AUTH_KEY);
-      return loggedIn;
-    } catch (provisionErr) {
-      console.error(`[RescueRoom] Failed to provision user ${demoUser.uid}:`, provisionErr);
-      throw provisionErr;
-    }
+    return sessionStorage.getItem('rescueroom_session_token') || '';
+  } catch {
+    return '';
   }
 }
 
 /**
- * Log out current user
+ * Helper to log in or provision user using client-side dev Auth Key
+ */
+async function loginWithDevKey(demoUser, devAuthKey) {
+  try {
+    const loggedIn = await CometChat.login(demoUser.uid, devAuthKey);
+    console.log(`[RescueRoom] Authenticated with CometChat (dev auth):`, loggedIn.getName());
+    return loggedIn;
+  } catch (loginErr) {
+    console.warn(`[RescueRoom] Dev login initial attempt for ${demoUser.uid}, provisioning user...`, loginErr);
+    const newUser = new CometChat.User(demoUser.uid);
+    newUser.setName(demoUser.name);
+    newUser.setMetadata({
+      companyId: demoUser.companyId,
+      companyName: demoUser.companyName,
+      role: demoUser.role,
+      callsign: demoUser.callsign,
+    });
+    await CometChat.createUser(newUser, devAuthKey);
+    return await CometChat.login(demoUser.uid, devAuthKey);
+  }
+}
+
+/**
+ * Log in a user securely via independent server-side authentication.
+ * Server verifies credentials, establishes an authenticated session, and mints a scoped CometChat auth token.
+ */
+export async function loginOrProvisionUser(demoUser) {
+  await initCometChat();
+
+  console.log(`[RescueRoom] Authenticating with server for ${demoUser.uid} (${demoUser.companyId})...`);
+
+  let response;
+  try {
+    response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        uid: demoUser.uid,
+        accessPin: demoUser.accessPin,
+        companyId: demoUser.companyId,
+      }),
+    });
+  } catch (netErr) {
+    console.error('[RescueRoom] Backend auth endpoint unreachable:', netErr);
+    const devAuthKey = import.meta.env.VITE_COMETCHAT_AUTH_KEY;
+    if (devAuthKey) {
+      console.warn(`[RescueRoom Notice] Backend unreachable. Engaging client-side dev authentication.`);
+      return await loginWithDevKey(demoUser, devAuthKey);
+    }
+    throw new Error('Authentication backend server unreachable. Ensure the backend server is running on port 3001.');
+  }
+
+  if (!response.ok) {
+    const devAuthKey = import.meta.env.VITE_COMETCHAT_AUTH_KEY;
+    // If backend returned 502 / 503 / 504 and local dev Auth Key exists, fall back smoothly
+    if (devAuthKey && (response.status >= 502 && response.status <= 504)) {
+      console.warn(`[RescueRoom Notice] Backend proxy returned ${response.status}. Engaging client-side dev authentication.`);
+      return await loginWithDevKey(demoUser, devAuthKey);
+    }
+    const errData = await response.json().catch(() => ({}));
+    throw new Error(errData.error || `Authentication failed with status ${response.status}`);
+  }
+
+  const result = await response.json();
+
+  // Store server-issued cryptographic session token
+  if (result.sessionToken) {
+    try {
+      sessionStorage.setItem('rescueroom_session_token', result.sessionToken);
+    } catch {
+      // ignore
+    }
+  }
+
+  // Primary Production / Staging Flow: Login using secure server-minted Auth Token
+  if (result.authToken) {
+    console.log(`[RescueRoom] Authenticating with CometChat via server-minted Auth Token...`);
+    const loggedIn = await CometChat.login(result.authToken);
+    console.log(`[RescueRoom] Authenticated with CometChat as:`, loggedIn.getName());
+    return loggedIn;
+  }
+
+  // Development Fallback if server runs in unconfigured local mode
+  if (result.devFallback) {
+    const devAuthKey = import.meta.env.VITE_COMETCHAT_AUTH_KEY;
+    if (devAuthKey) {
+      console.warn(`[RescueRoom Security Notice] Backend server has no COMETCHAT_API_KEY configured. Falling back to local dev Auth Key.`);
+      return await loginWithDevKey(demoUser, devAuthKey);
+    }
+    throw new Error('CometChat server credentials (COMETCHAT_API_KEY) are required on the server to authenticate.');
+  }
+
+  throw new Error('No valid authentication token received from server.');
+}
+
+/**
+ * Log out current user and revoke session & tokens server-side
  */
 export async function logoutUser() {
   await initCometChat();
+  const sessionToken = getSessionToken();
+  if (sessionToken) {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${sessionToken}` },
+      });
+    } catch (e) {
+      console.warn('[RescueRoom] Server session revocation warning:', e);
+    }
+  }
+  try {
+    sessionStorage.removeItem('rescueroom_session_token');
+  } catch {
+    // ignore
+  }
   return CometChat.logout();
 }
 

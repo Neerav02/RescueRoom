@@ -1,0 +1,68 @@
+{
+  "timestamp": "2026-11-15T22:19:55.770Z",
+  "routesTested": [
+    {
+      "route": "/login",
+      "name": "Authentication Gate",
+      "axePasses": 29,
+      "violations": [],
+      "smallTargetsCount": 0,
+      "smallTargetsSample": [],
+      "tabElements": 24
+    },
+    {
+      "route": "/operator",
+      "name": "Operator Dispatch Console",
+      "axePasses": 29,
+      "violations": [],
+      "smallTargetsCount": 0,
+      "smallTargetsSample": [],
+      "tabElements": 20
+    },
+    {
+      "route": "/board",
+      "name": "Command Crisis Board",
+      "axePasses": 33,
+      "violations": [],
+      "smallTargetsCount": 0,
+      "smallTargetsSample": [],
+      "tabElements": 30
+    },
+    {
+      "route": "/room/northwind_inc_104",
+      "name": "Field Incident Room",
+      "axePasses": 32,
+      "violations": [],
+      "smallTargetsCount": 0,
+      "smallTargetsSample": [],
+      "tabElements": 33
+    },
+    {
+      "route": "/twin",
+      "name": "Equipment Digital Twin",
+      "axePasses": 34,
+      "violations": [],
+      "smallTargetsCount": 0,
+      "smallTargetsSample": [],
+      "tabElements": 33
+    },
+    {
+      "route": "/report/northwind_inc_104",
+      "name": "Incident Forensic Report",
+      "axePasses": 40,
+      "violations": [],
+      "smallTargetsCount": 0,
+      "smallTargetsSample": [],
+      "tabElements": 35
+    }
+  ],
+  "axeSummary": {
+    "totalViolations": 0,
+    "totalPasses": 197
+  },
+  "touchTargetViolations": [],
+  "reducedMotionVerification": {
+    "emulatedReducedMotionActive": true
+  },
+  "keyboardFocusVerification": {}
+}

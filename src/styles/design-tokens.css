@@ -7,7 +7,7 @@
   /* Core 6-Color Custom Palette */
   --color-bone: #EFE8D8;           /* Paper background */
   --color-ink: #1C1B18;            /* Primary text, ink lines, borders */
-  --color-vermilion: #E4421E;      /* Alert, emergency, critical severity, call button */
+  --color-vermilion: #C93210;      /* Alert, emergency, critical severity, call button - WCAG 2.1 AA compliant */
   --color-teal: #1F6F68;           /* Calm, resolved status, online dot, success */
   --color-hazard: #F2B705;         /* Hazard yellow, highlights, warning stripes */
   --color-dark-panel: #14201F;     /* Tactical dark panel for video/calls */
@@ -19,6 +19,19 @@
   --color-ink-muted: #535048;
   --color-ink-subtle: #847F74;
   --color-white: #FFFFFF;
+
+  /* Tactical Subtle Status Washes (Field Manual Bone-Tinted) */
+  --color-vermilion-subtle: #FBECE8;
+  --color-hazard-light: #FEF7DE;
+  --color-teal-light: #E8F4F2;
+
+  /* Tactical CAD & Blueprint Substrate */
+  --color-cad-bg: #0F1A1C;
+  --color-cad-stroke: rgba(120, 200, 220, 0.6);
+  --color-cad-stroke-accent: rgba(120, 200, 220, 0.85);
+  --color-cad-nominal: #34D399;
+  --color-cad-fault: #EF4444;
+  --color-cad-active: #0EA5E9;
 
   /* Typography */
   --font-heading: 'Bricolage Grotesque', -apple-system, BlinkMacSystemFont, sans-serif;

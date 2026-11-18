@@ -1,0 +1,22 @@
+{
+  "timestamp": "2026-11-14T14:21:24.316Z",
+  "browser": "Chrome/157.0.8103.78",
+  "screenshotsCaptured": 17,
+  "performance": {
+    "fps": 8,
+    "meanFrameMs": 125.48,
+    "minFrameMs": 83.2,
+    "maxFrameMs": 183.4,
+    "sampleCount": 85
+  },
+  "memory": {
+    "jsHeapUsedMB": "0.00",
+    "jsHeapTotalMB": "0.00",
+    "domNodes": 0
+  },
+  "responsiveChecks": {
+    "overflow320px": false,
+    "overflowBoard375px": false
+  },
+  "consoleMessagesCount": 232
+}

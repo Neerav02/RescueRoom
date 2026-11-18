@@ -1,24 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CometChat, ensureUserLoggedIn } from '../lib/cometchat';
 import { seedDemoIncidents } from '../lib/seed';
+import { IncidentTimer } from '../components';
 
 export default function TriageBoardPage({ currentUser }) {
   const navigate = useNavigate();
   const [incidents, setIncidents] = useState([]);
-  const [unreadMap, setUnreadMap] = useState({});
   const [loading, setLoading] = useState(true);
-  const [now, setNow] = useState(Date.now());
   const [showResolvedArchive, setShowResolvedArchive] = useState(false);
-
-  // 1-second interval to drive live monospace timers
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, []);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [severityFilter, setSeverityFilter] = useState('ALL');
 
   // Fetch all incidents and unread counts for this company
-  const loadIncidents = async () => {
+  const loadIncidents = useCallback(async () => {
     if (!currentUser) return;
     try {
       await ensureUserLoggedIn(currentUser);
@@ -48,7 +43,6 @@ export default function TriageBoardPage({ currentUser }) {
             unreads[peer.getGuid()] = c.getUnreadMessageCount() || 0;
           }
         });
-        setUnreadMap(unreads);
       } catch (convErr) {
         console.warn('[RescueRoom] Unread count fetch notice:', convErr);
       }
@@ -102,11 +96,16 @@ export default function TriageBoardPage({ currentUser }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentUser]);
 
   // Real-time CometChat listeners: New incidents pin themselves live without page reload (Prompt 7)
   useEffect(() => {
-    loadIncidents();
+    let isSubscribed = true;
+    (async () => {
+      if (isSubscribed) {
+        await loadIncidents();
+      }
+    })();
 
     const timestamp = Date.now();
     const groupListenerId = `triage_group_listener_${timestamp}`;
@@ -146,33 +145,61 @@ export default function TriageBoardPage({ currentUser }) {
       })
     );
 
-    // Reliable 4-second polling fallback
-    const pollInterval = setInterval(loadIncidents, 4000);
+    // Visibility-aware smart polling fallback: 12-second heartbeat, pauses when tab is hidden
+    let pollInterval = null;
+    const startPolling = () => {
+      if (!pollInterval) {
+        pollInterval = setInterval(loadIncidents, 12000);
+      }
+    };
+    const stopPolling = () => {
+      if (pollInterval) {
+        clearInterval(pollInterval);
+        pollInterval = null;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopPolling();
+      } else {
+        loadIncidents();
+        startPolling();
+      }
+    };
+
+    if (!document.hidden) {
+      startPolling();
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       CometChat.removeGroupListener(groupListenerId);
       CometChat.removeMessageListener(messageListenerId);
-      clearInterval(pollInterval);
+      stopPolling();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [currentUser]);
-
-  // Format elapsed time as HH:MM:SS
-  const formatTimer = (openedAt, endedAt = null) => {
-    const end = endedAt || now;
-    const diffSec = Math.max(0, Math.floor((end - openedAt) / 1000));
-    const hrs = String(Math.floor(diffSec / 3600)).padStart(2, '0');
-    const mins = String(Math.floor((diffSec % 3600) / 60)).padStart(2, '0');
-    const secs = String(diffSec % 60).padStart(2, '0');
-    return `${hrs}:${mins}:${secs}`;
-  };
+  }, [currentUser, loadIncidents]);
 
   // Group open incidents into three columns
   const openIncidents = incidents.filter((i) => i.status !== 'resolved');
   const resolvedIncidents = incidents.filter((i) => i.status === 'resolved').sort((a, b) => (b.resolvedAt || 0) - (a.resolvedAt || 0));
 
-  const criticalList = openIncidents.filter((i) => i.severity === 'CRITICAL').sort((a, b) => a.openedAt - b.openedAt);
-  const seriousList = openIncidents.filter((i) => i.severity === 'SERIOUS').sort((a, b) => a.openedAt - b.openedAt);
-  const minorList = openIncidents.filter((i) => i.severity === 'MINOR').sort((a, b) => a.openedAt - b.openedAt);
+  const filteredOpenIncidents = openIncidents.filter((i) => {
+    const matchesSeverity = severityFilter === 'ALL' || i.severity === severityFilter;
+    const q = searchQuery.trim().toLowerCase();
+    const matchesSearch =
+      !q ||
+      i.name.toLowerCase().includes(q) ||
+      i.incidentCode.toLowerCase().includes(q) ||
+      i.equipment.toLowerCase().includes(q) ||
+      i.description.toLowerCase().includes(q);
+    return matchesSeverity && matchesSearch;
+  });
+
+  const criticalList = filteredOpenIncidents.filter((i) => i.severity === 'CRITICAL').sort((a, b) => a.openedAt - b.openedAt);
+  const seriousList = filteredOpenIncidents.filter((i) => i.severity === 'SERIOUS').sort((a, b) => a.openedAt - b.openedAt);
+  const minorList = filteredOpenIncidents.filter((i) => i.severity === 'MINOR').sort((a, b) => a.openedAt - b.openedAt);
 
   const columns = [
     {
@@ -202,8 +229,8 @@ export default function TriageBoardPage({ currentUser }) {
   ];
 
   return (
-    <div style={{ width: '100%', flex: 1, padding: '32px 32px 64px' }}>
-      <div style={{ maxWidth: '1440px', margin: '0 auto' }}>
+    <div className="triage-page-container">
+      <div style={{ maxWidth: '1440px', margin: '0 auto', width: '100%' }}>
         {/* Triage Board Top Header */}
         <div
           style={{
@@ -217,8 +244,8 @@ export default function TriageBoardPage({ currentUser }) {
             gap: '16px',
           }}
         >
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ minWidth: 0, flex: '1 1 300px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               <span className="stamp stamp-serious">TACTICAL TRIAGE BOARD</span>
               <span className="mono" style={{ fontSize: '0.78rem', color: 'var(--color-ink-muted)' }}>
                 {currentUser?.companyName.toUpperCase()} · WORKSPACE
@@ -227,15 +254,29 @@ export default function TriageBoardPage({ currentUser }) {
                 ● REAL-TIME DISPATCH QUEUE
               </span>
             </div>
-            <h1 style={{ fontSize: '2.4rem', margin: '4px 0 0' }}>
+            <h1
+              style={{
+                fontSize: 'clamp(1.6rem, 4vw, 2.4rem)',
+                margin: '4px 0 0',
+                wordBreak: 'break-word',
+              }}
+            >
               INCIDENT COMMAND BOARD
             </h1>
-            <p className="mono" style={{ fontSize: '0.88rem', color: 'var(--color-ink-muted)', marginTop: '4px' }}>
+            <p
+              className="mono"
+              style={{
+                fontSize: '0.82rem',
+                color: 'var(--color-ink-muted)',
+                marginTop: '4px',
+                lineHeight: 1.4,
+              }}
+            >
               PHYSICAL PINNED PAPER TAGS · LIVE ACTIVE ELAPSED MONOSPACE TIMERS · REAL-TIME CLOUD SYNC
             </p>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div className="triage-header-actions">
             {currentUser?.role === 'operator' && (
               <button
                 onClick={() => navigate('/operator')}
@@ -270,27 +311,218 @@ export default function TriageBoardPage({ currentUser }) {
           </div>
         </div>
 
+        {/* Operational Telemetry & KPI Strip */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gap: '12px',
+            marginBottom: '20px',
+          }}
+        >
+          <div
+            className="paper-card"
+            style={{
+              padding: '12px 14px',
+              borderLeft: '4px solid var(--color-ink)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div className="mono" style={{ fontSize: '0.68rem', color: 'var(--color-ink-muted)', letterSpacing: '0.06em' }}>
+              TOTAL ACTIVE FAULTS
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '4px' }}>
+              <span className="mono" style={{ fontSize: '1.6rem', fontWeight: 900, lineHeight: 1 }}>
+                {openIncidents.length}
+              </span>
+              <span className="mono" style={{ fontSize: '0.72rem', color: 'var(--color-ink-muted)' }}>
+                QUEUED
+              </span>
+            </div>
+          </div>
+
+          <div
+            className="paper-card"
+            style={{
+              padding: '12px 14px',
+              borderLeft: '4px solid var(--color-vermilion)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div className="mono" style={{ fontSize: '0.68rem', color: '#8F1D05', fontWeight: 700, letterSpacing: '0.06em' }}>
+              CRITICAL WORK STOPPAGE
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '4px' }}>
+              <span className="mono" style={{ fontSize: '1.6rem', fontWeight: 900, color: 'var(--color-vermilion)', lineHeight: 1 }}>
+                {openIncidents.filter((i) => i.severity === 'CRITICAL').length}
+              </span>
+              <span className="mono" style={{ fontSize: '0.72rem', color: 'var(--color-ink-muted)' }}>
+                REDLINE
+              </span>
+            </div>
+          </div>
+
+          <div
+            className="paper-card"
+            style={{
+              padding: '12px 14px',
+              borderLeft: '4px solid var(--color-hazard)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div className="mono" style={{ fontSize: '0.68rem', color: 'var(--color-ink)', letterSpacing: '0.06em' }}>
+              DEGRADED / MINOR FAULTS
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '4px' }}>
+              <span className="mono" style={{ fontSize: '1.6rem', fontWeight: 900, lineHeight: 1 }}>
+                {openIncidents.filter((i) => i.severity !== 'CRITICAL').length}
+              </span>
+              <span className="mono" style={{ fontSize: '0.72rem', color: 'var(--color-ink-muted)' }}>
+                ATTENTION
+              </span>
+            </div>
+          </div>
+
+          <div
+            className="paper-card"
+            style={{
+              padding: '12px 14px',
+              borderLeft: '4px solid var(--color-teal)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div className="mono" style={{ fontSize: '0.68rem', color: 'var(--color-teal)', letterSpacing: '0.06em' }}>
+              RESOLVED & AUDITED
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '4px' }}>
+              <span className="mono" style={{ fontSize: '1.6rem', fontWeight: 900, color: 'var(--color-teal)', lineHeight: 1 }}>
+                {resolvedIncidents.length}
+              </span>
+              <span className="mono" style={{ fontSize: '0.72rem', color: 'var(--color-ink-muted)' }}>
+                STAMPED
+              </span>
+            </div>
+          </div>
+
+          <div
+            className="paper-card"
+            style={{
+              padding: '12px 14px',
+              backgroundColor: 'var(--color-paper-light)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'flex-start',
+              gap: '6px',
+            }}
+          >
+            <div className="mono" style={{ fontSize: '0.68rem', color: 'var(--color-teal)', fontWeight: 800 }}>
+              ◈ 3D DIGITAL TWIN
+            </div>
+            <button
+              onClick={() => navigate('/twin')}
+              className="btn btn-teal"
+              style={{ width: '100%', fontSize: '0.76rem', padding: '8px 12px' }}
+              title="Open full interactive 3D digital twin"
+            >
+              LAUNCH 3D TWIN ↗
+            </button>
+          </div>
+        </div>
+
+        {/* Triage Search & Severity Filter Bar */}
+        <div
+          className="paper-card"
+          style={{
+            padding: '14px 16px',
+            marginBottom: '24px',
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: '1 1 280px', minWidth: 0 }}>
+            <label htmlFor="triage-search" className="mono" style={{ fontSize: '0.76rem', fontWeight: 800, whiteSpace: 'nowrap' }}>
+              SEARCH:
+            </label>
+            <input
+              id="triage-search"
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Filter by incident ID, machinery, or description..."
+              className="input-field mono"
+              style={{
+                flex: 1,
+                fontSize: '0.82rem',
+                padding: '8px 10px',
+                minWidth: '160px',
+              }}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="btn"
+                style={{ padding: '6px 10px', fontSize: '0.74rem' }}
+                title="Clear search query"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+            <span className="mono" style={{ fontSize: '0.72rem', color: 'var(--color-ink-muted)', marginRight: '4px' }}>
+              SEVERITY:
+            </span>
+            {['ALL', 'CRITICAL', 'SERIOUS', 'MINOR'].map((sev) => {
+              const isSelected = severityFilter === sev;
+              const count =
+                sev === 'ALL'
+                  ? openIncidents.length
+                  : openIncidents.filter((i) => i.severity === sev).length;
+
+              return (
+                <button
+                  key={sev}
+                  type="button"
+                  onClick={() => setSeverityFilter(sev)}
+                  className={`btn ${isSelected ? (sev === 'CRITICAL' ? 'btn-vermilion' : sev === 'SERIOUS' ? 'btn-hazard' : 'btn-teal') : ''}`}
+                  style={{
+                    fontSize: '0.72rem',
+                    padding: '6px 10px',
+                    backgroundColor: isSelected ? undefined : 'var(--color-paper-light)',
+                  }}
+                  aria-pressed={isSelected}
+                >
+                  {sev} ({count})
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* The Three Triage Severity Columns */}
         {loading ? (
-          <div className="paper-card mono" style={{ textAlign: 'center', padding: '48px' }}>
+          <div className="paper-card mono" style={{ textAlign: 'center', padding: '48px 16px', minWidth: 0 }}>
             SCANNING COMETCHAT INCIDENT QUEUE...
           </div>
         ) : (
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))',
-              gap: '24px',
-            }}
-          >
+          <div className="triage-grid">
             {columns.map((col) => (
               <div
                 key={col.id}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '16px',
-                }}
+                className="triage-column"
               >
                 {/* Column Pinned Header */}
                 <div
@@ -299,15 +531,17 @@ export default function TriageBoardPage({ currentUser }) {
                     color: col.bannerText,
                     border: 'var(--border-ink-thick)',
                     boxShadow: 'var(--shadow-hard)',
-                    padding: '12px 18px',
+                    padding: '12px 16px',
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '8px',
                   }}
                 >
-                  <div>
-                    <h2 style={{ fontSize: '1.25rem', margin: 0 }}>{col.title}</h2>
-                    <div className="mono" style={{ fontSize: '0.68rem', opacity: 0.85 }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <h2 style={{ fontSize: '1.25rem', margin: 0, wordBreak: 'break-word' }}>{col.title}</h2>
+                    <div className="mono" style={{ fontSize: '0.68rem', color: col.bannerText }}>
                       {col.subtitle}
                     </div>
                   </div>
@@ -318,6 +552,7 @@ export default function TriageBoardPage({ currentUser }) {
                       color: 'var(--color-ink)',
                       fontWeight: 800,
                       fontSize: '0.88rem',
+                      flexShrink: 0,
                     }}
                   >
                     {col.items.length} ACTIVE
@@ -334,6 +569,7 @@ export default function TriageBoardPage({ currentUser }) {
                         border: '1px dashed var(--color-ink-subtle)',
                         textAlign: 'center',
                         padding: '36px 16px',
+                        minWidth: 0,
                       }}
                     >
                       <span className="mono" style={{ fontSize: '0.78rem', color: 'var(--color-ink-muted)' }}>
@@ -348,12 +584,8 @@ export default function TriageBoardPage({ currentUser }) {
                       return (
                         <div
                           key={inc.guid}
-                          className={`paper-card triage-tag ${isOldestWaiting ? 'triage-tag-oldest' : ''}`}
+                          className={`paper-card triage-tag triage-tag-card ${isOldestWaiting ? 'triage-tag-oldest' : ''}`}
                           onClick={() => navigate(`/room/${inc.guid}`)}
-                          style={{
-                            padding: '18px 20px',
-                            cursor: 'pointer',
-                          }}
                         >
                           {/* Pin & Header Tape Indicator */}
                           <div
@@ -362,22 +594,24 @@ export default function TriageBoardPage({ currentUser }) {
                               justifyContent: 'space-between',
                               alignItems: 'center',
                               marginBottom: '10px',
+                              flexWrap: 'wrap',
+                              gap: '6px',
                             }}
                           >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <span className="triage-pin-head" title="Pinned Paper Tag" />
-                              <span className="mono" style={{ fontSize: '0.75rem', fontWeight: 800 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                              <span className="triage-pin-head" title="Pinned Paper Tag" style={{ flexShrink: 0 }} />
+                              <span className="mono" style={{ fontSize: '0.75rem', fontWeight: 800, wordBreak: 'break-all' }}>
                                 #{inc.incidentCode}
                               </span>
                             </div>
 
                             {/* Unread Message Pill (Prompt 7 Tag Anatomy) */}
                             {inc.unreadCount > 0 ? (
-                              <span className="unread-pill">
+                              <span className="unread-pill" style={{ flexShrink: 0 }}>
                                 ● {inc.unreadCount} NEW
                               </span>
                             ) : (
-                              <span className="caught-up-pill">
+                              <span className="caught-up-pill" style={{ flexShrink: 0 }}>
                                 ✓ CAUGHT UP
                               </span>
                             )}
@@ -393,15 +627,38 @@ export default function TriageBoardPage({ currentUser }) {
                           )}
 
                           {/* Tag Machinery Badge & Live Monospace Timer */}
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
-                            <div>
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'flex-start',
+                              gap: '12px',
+                              flexWrap: 'wrap',
+                            }}
+                          >
+                            <div style={{ minWidth: 0, flex: '1 1 140px' }}>
                               {/* Machinery Badge */}
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <span className="stamp" style={{ backgroundColor: 'var(--color-paper-light)', fontSize: '0.68rem', padding: '2px 6px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                <span
+                                  className="stamp"
+                                  style={{
+                                    backgroundColor: 'var(--color-paper-light)',
+                                    fontSize: '0.68rem',
+                                    padding: '2px 6px',
+                                    wordBreak: 'break-word',
+                                  }}
+                                >
                                   🚜 {inc.equipment}
                                 </span>
                               </div>
-                              <h3 style={{ fontSize: '1.25rem', marginTop: '6px', lineHeight: 1.15 }}>
+                              <h3
+                                style={{
+                                  fontSize: '1.25rem',
+                                  marginTop: '6px',
+                                  lineHeight: 1.15,
+                                  wordBreak: 'break-word',
+                                }}
+                              >
                                 {inc.name}
                               </h3>
                             </div>
@@ -409,11 +666,12 @@ export default function TriageBoardPage({ currentUser }) {
                             {/* Large Monospace Live Elapsed Timer (Prompt 7) */}
                             <div
                               style={{
-                                backgroundColor: isOldestWaiting ? '#FFEBE8' : 'var(--color-paper-light)',
+                                backgroundColor: isOldestWaiting ? 'var(--color-vermilion-subtle)' : 'var(--color-paper-light)',
                                 border: '1px solid var(--color-ink)',
                                 padding: '6px 10px',
                                 textAlign: 'right',
-                                minWidth: '105px',
+                                minWidth: '100px',
+                                flexShrink: 0,
                               }}
                             >
                               <div className="mono" style={{ fontSize: '0.62rem', color: 'var(--color-ink-muted)' }}>
@@ -428,7 +686,7 @@ export default function TriageBoardPage({ currentUser }) {
                                   letterSpacing: '0.04em',
                                 }}
                               >
-                                {formatTimer(inc.openedAt)}
+                                <IncidentTimer openedAt={inc.openedAt} />
                               </div>
                             </div>
                           </div>
@@ -441,6 +699,7 @@ export default function TriageBoardPage({ currentUser }) {
                               margin: '12px 0 16px',
                               lineHeight: 1.4,
                               opacity: 0.9,
+                              wordBreak: 'break-word',
                             }}
                           >
                             {inc.description}
@@ -454,13 +713,15 @@ export default function TriageBoardPage({ currentUser }) {
                               alignItems: 'center',
                               borderTop: '1px dashed var(--color-ink-subtle)',
                               paddingTop: '12px',
+                              flexWrap: 'wrap',
+                              gap: '8px',
                             }}
                           >
-                            <span className="mono" style={{ fontSize: '0.76rem', fontWeight: 700 }}>
+                            <span className="mono" style={{ fontSize: '0.76rem', fontWeight: 700, minWidth: 0 }}>
                               👥 {inc.membersCount} RESPONDERS JOINED
                             </span>
 
-                            <button className="btn btn-hazard" style={{ fontSize: '0.74rem', padding: '6px 12px' }}>
+                            <button className="btn btn-hazard" style={{ fontSize: '0.74rem', padding: '6px 12px', flexShrink: 0 }}>
                               OPEN DISPATCH ROOM →
                             </button>
                           </div>
@@ -484,28 +745,24 @@ export default function TriageBoardPage({ currentUser }) {
                 alignItems: 'center',
                 cursor: 'pointer',
                 marginBottom: '16px',
+                flexWrap: 'wrap',
+                gap: '12px',
               }}
               onClick={() => setShowResolvedArchive((prev) => !prev)}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                 <span className="stamp stamp-resolved">RESOLVED ARCHIVE</span>
                 <span className="mono" style={{ fontSize: '0.88rem', fontWeight: 700 }}>
                   {resolvedIncidents.length} COMPLETED INCIDENTS
                 </span>
               </div>
-              <button className="btn" style={{ fontSize: '0.75rem', padding: '6px 12px' }}>
+              <button className="btn" style={{ fontSize: '0.75rem', padding: '6px 12px', flexShrink: 0 }}>
                 {showResolvedArchive ? '▲ HIDE ARCHIVE' : '▼ VIEW RESOLVED ARCHIVE'}
               </button>
             </div>
 
             {showResolvedArchive && (
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
-                  gap: '18px',
-                }}
-              >
+              <div className="triage-resolved-grid">
                 {resolvedIncidents.map((inc) => (
                   <div
                     key={inc.guid}
@@ -515,22 +772,31 @@ export default function TriageBoardPage({ currentUser }) {
                       border: '1px solid var(--color-ink)',
                       borderLeft: '8px solid var(--color-teal)',
                       padding: '16px',
+                      minWidth: 0,
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: '6px',
+                      }}
+                    >
                       <span className="stamp stamp-resolved" style={{ fontSize: '0.65rem' }}>
                         RESOLVED
                       </span>
                       <span className="mono" style={{ fontSize: '0.75rem', color: 'var(--color-ink-muted)' }}>
-                        TOTAL DOWNTIME: {formatTimer(inc.openedAt, inc.resolvedAt)}
+                        TOTAL DOWNTIME: <IncidentTimer openedAt={inc.openedAt} endedAt={inc.resolvedAt} />
                       </span>
                     </div>
 
-                    <h4 style={{ fontSize: '1.1rem', margin: '8px 0 4px' }}>
+                    <h4 style={{ fontSize: '1.1rem', margin: '8px 0 4px', wordBreak: 'break-word' }}>
                       {inc.name}
                     </h4>
 
-                    <div className="mono" style={{ fontSize: '0.74rem', color: 'var(--color-ink-muted)' }}>
+                    <div className="mono" style={{ fontSize: '0.74rem', color: 'var(--color-ink-muted)', wordBreak: 'break-word' }}>
                       EQUIPMENT: {inc.equipment}
                     </div>
 
@@ -542,6 +808,8 @@ export default function TriageBoardPage({ currentUser }) {
                         marginTop: '12px',
                         paddingTop: '8px',
                         borderTop: '1px dashed var(--color-ink-subtle)',
+                        flexWrap: 'wrap',
+                        gap: '8px',
                       }}
                     >
                       <span className="mono" style={{ fontSize: '0.72rem' }}>
@@ -550,7 +818,7 @@ export default function TriageBoardPage({ currentUser }) {
                       <button
                         onClick={() => navigate(`/report/${inc.guid}`)}
                         className="btn btn-teal"
-                        style={{ fontSize: '0.72rem', padding: '5px 10px' }}
+                        style={{ fontSize: '0.72rem', padding: '5px 10px', flexShrink: 0 }}
                       >
                         📄 SERVICE REPORT →
                       </button>

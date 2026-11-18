@@ -26,9 +26,9 @@ export default function LoginPage({ onLoginSuccess }) {
   };
 
   return (
-    <div style={{ width: '100%', flex: 1, padding: '32px 32px 64px' }}>
+    <div className="login-page-container">
       {/* Centered Top Dispatch Ticker */}
-      <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+      <div style={{ maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
         <div
           style={{
             display: 'flex',
@@ -82,7 +82,7 @@ export default function LoginPage({ onLoginSuccess }) {
           <div
             className="paper-card"
             style={{
-              backgroundColor: '#FFEBE8',
+              backgroundColor: 'var(--color-vermilion-subtle)',
               borderColor: 'var(--color-vermilion)',
               borderLeft: '8px solid var(--color-vermilion)',
               marginBottom: '24px',
@@ -96,13 +96,7 @@ export default function LoginPage({ onLoginSuccess }) {
         )}
 
         {/* Dual Company Columns: Northwind Heavy Equipment & Kestrel Logistics */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(560px, 1fr))',
-            gap: '32px',
-          }}
-        >
+        <div className="login-companies-grid">
           {/* Company 1: Northwind Heavy Equipment */}
           <section
             className="paper-card"
@@ -149,16 +143,9 @@ export default function LoginPage({ onLoginSuccess }) {
                 return (
                   <div
                     key={user.uid}
-                    className="paper-card"
+                    className="paper-card login-personnel-card"
                     style={{
-                      padding: '16px 20px',
-                      backgroundColor: 'var(--color-bone)',
                       cursor: loadingUid ? 'wait' : 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      transition: 'transform 0.1s ease, box-shadow 0.1s ease',
-                      border: 'var(--border-ink)',
                     }}
                     onClick={() => !loadingUid && handleSelectUser(user)}
                     onMouseEnter={(e) => {
@@ -180,7 +167,7 @@ export default function LoginPage({ onLoginSuccess }) {
                           {user.role.toUpperCase()}
                         </span>
                         <span className="mono" style={{ fontSize: '0.74rem', color: 'var(--color-ink-muted)' }}>
-                          {user.callsign}
+                          {user.callsign} · SEC-PIN: {user.accessPin}
                         </span>
                       </div>
                       <div style={{ fontSize: '1.2rem', fontWeight: 700 }}>
@@ -193,7 +180,7 @@ export default function LoginPage({ onLoginSuccess }) {
 
                     <div>
                       <button
-                        className={`btn ${user.role === 'operator' ? 'btn-vermilion' : 'btn-hazard'}`}
+                        className="btn btn-hazard"
                         style={{ fontSize: '0.82rem', padding: '10px 16px' }}
                         disabled={loadingUid}
                       >
@@ -267,16 +254,9 @@ export default function LoginPage({ onLoginSuccess }) {
                 return (
                   <div
                     key={user.uid}
-                    className="paper-card"
+                    className="paper-card login-personnel-card"
                     style={{
-                      padding: '16px 20px',
-                      backgroundColor: 'var(--color-bone)',
                       cursor: loadingUid ? 'wait' : 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      transition: 'transform 0.1s ease, box-shadow 0.1s ease',
-                      border: 'var(--border-ink)',
                     }}
                     onClick={() => !loadingUid && handleSelectUser(user)}
                     onMouseEnter={(e) => {
@@ -298,7 +278,7 @@ export default function LoginPage({ onLoginSuccess }) {
                           {user.role.toUpperCase()}
                         </span>
                         <span className="mono" style={{ fontSize: '0.74rem', color: 'var(--color-ink-muted)' }}>
-                          {user.callsign}
+                          {user.callsign} · SEC-PIN: {user.accessPin}
                         </span>
                       </div>
                       <div style={{ fontSize: '1.2rem', fontWeight: 700 }}>
@@ -311,7 +291,7 @@ export default function LoginPage({ onLoginSuccess }) {
 
                     <div>
                       <button
-                        className={`btn ${user.role === 'operator' ? 'btn-vermilion' : 'btn-hazard'}`}
+                        className="btn btn-hazard"
                         style={{ fontSize: '0.82rem', padding: '10px 16px' }}
                         disabled={loadingUid}
                       >
